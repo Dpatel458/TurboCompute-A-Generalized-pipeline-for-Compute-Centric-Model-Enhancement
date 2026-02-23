@@ -1,0 +1,207 @@
+/* ================= RESET ================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ================= LENIS FIX ================= */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+/* ================= SCROLLBAR ================= */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050810;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8b5cf6, #06b6d4);
+  border-radius: 3px;
+}
+
+/* ================= TEXT UTILITIES ================= */
+.gradient-text {
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-glow {
+  text-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
+}
+
+/* ================= GLASS ================= */
+.glass {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-strong {
+  background: rgba(10, 15, 28, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ================= CUSTOM CURSOR ================= */
+.custom-cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cursor-ring {
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(139, 92, 246, 0.6);
+}
+
+.cursor-dot {
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+}
+
+/* ================= ANIMATIONS ================= */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-25px);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* ================= NOISE ================= */
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  pointer-events: none;
+}
+
+/* =========================================================
+   STAGGERED MENU – FINAL SAFE LAYERING
+   ========================================================= */
+
+/* NAVBAR */
+#navbar {
+  position: fixed;
+  pointer-events: auto;
+  z-index: 60;
+}
+
+
+.navbar-scrolled {
+      background: rgba(10, 15, 28, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* MENU WRAPPER */
+#smWrapper {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 70;
+  
+}
+
+body.menu-open #smWrapper {
+  pointer-events: auto;
+}
+
+/* COLOR SLIDE LAYERS */
+#smLayers {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* MENU PANEL */
+#smPanel {
+  position: absolute;
+  inset: 0;
+  z-index: 75;
+  pointer-events: none;
+
+  /* PURE BLUR — NO COLOR */
+  background: transparent;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+
+
+/* TOGGLE BUTTON (ALWAYS TOPMOST) */
+#smToggle {
+  position: fixed;
+  z-index: 80;
+  pointer-events: auto;
+}
+
+
+/* =========================================================
+   MENU ITEM UNDERLINE (WORKING)
+   ========================================================= */
+
+/* ================= MENU ITEM UNDERLINE (NO COLOR CHANGE) ================= */
+.sm-item {
+  position: relative;
+  display: inline-block;
+  color: #e5e7eb;
+  text-decoration: none;
+  padding-bottom: 6px;
+}
+
+/* underline */
+.sm-item::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.sm-item:hover::after {
+  width: 100%;
+}
+
+body.menu-open #smPanel {
+  pointer-events: auto;
+}

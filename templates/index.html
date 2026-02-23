@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Model Pruning - Efficient AI Optimization</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <!-- Lenis Smooth Scroll -->
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              900: '#0a0f1c',
+              800: '#111827',
+              400: '#94a3b8',
+              50: '#f8fafc',
+            },
+            violet: {
+              400: '#a78bfa',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+            },
+            cyan: {
+              400: '#22d3ee',
+              500: '#06b6d4',
+            },
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0f1c;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+
+    html.lenis,
+    html.lenis body {
+      height: auto;
+    }
+
+    .lenis.lenis-smooth {
+      scroll-behavior: auto !important;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #050810;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #8b5cf6, #06b6d4);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #a78bfa, #22d3ee);
+    }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #22d3ee 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Glass effect - enhanced */
+    .glass {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-strong {
+      background: rgba(10, 15, 28, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Custom cursor */
+    .custom-cursor {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      mix-blend-mode: difference;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      will-change: transform;
+    }
+
+    .cursor-ring {
+      width: 40px;
+      height: 40px;
+      border: 2px solid rgba(139, 92, 246, 0.6);
+      transition: transform 0.15s ease-out, border-color 0.3s;
+    }
+
+    .cursor-dot {
+      width: 8px;
+      height: 8px;
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    }
+
+    /* Button lift effect */
+    .btn-lift {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-lift:hover {
+      transform: translateY(-3px);
+    }
+
+    /* Card depth effect - enhanced */
+    .card-depth {
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-depth:hover {
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5),
+        0 0 60px rgba(139, 92, 246, 0.2);
+    }
+
+    /* Glow effects */
+    .glow-violet {
+      box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
+    }
+
+    .glow-cyan {
+      box-shadow: 0 0 40px rgba(6, 182, 212, 0.4);
+    }
+
+    /* Animations */
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-25px);
+      }
+    }
+
+    @keyframes pulse-glow {
+
+      0%,
+      100% {
+        opacity: 0.4;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    .animate-float {
+      animation: float 5s ease-in-out infinite;
+    }
+
+    .animate-pulse-glow {
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    .animate-shimmer {
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 3s infinite;
+    }
+
+    /* Noise overlay */
+    .noise-overlay::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Background overlay for text readability */
+    .bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg,
+          rgba(10, 15, 28, 0.9) 0%,
+          rgba(10, 15, 28, 0.5) 30%,
+          rgba(10, 15, 28, 0.3) 50%,
+          rgba(10, 15, 28, 0.5) 70%,
+          rgba(10, 15, 28, 0.95) 100%);
+      pointer-events: none;
+    }
+
+    .bg-overlay-light {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 15, 28, 0.75);
+      pointer-events: none;
+    }
+
+    .bg-overlay-radial {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(10, 15, 28, 0.8) 70%, rgba(10, 15, 28, 0.95) 100%);
+      pointer-events: none;
+    }
+
+    /* Hide cursor on touch devices */
+    @media (pointer: coarse) {
+      .custom-cursor {
+        display: none !important;
+      }
+    }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Text shadow for better readability */
+    .text-glow {
+      text-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
+    }
+
+    .graph-para-glow {
+      text-shadow:
+        0 0 8px rgba(96, 165, 250, 0.45),
+        0 0 18px rgba(56, 189, 248, 0.25);
+    }
+
+    /* From Uiverse.io by vinodjangid07 */
+    /* From Uiverse.io by vinodjangid07 */
+    .card {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      background: rgba(17, 24, 39, 0.9);
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      transition: all 1s ease-in-out;
+      border: 1px solid rgba(139, 92, 246, 0.35);
+    }
+
+    .background {
+      position: absolute;
+      inset: 0;
+      background-color: #0f172a;
+      background-image: linear-gradient(140deg, #0f172a 0%, #6d28d9 50%, #0891b2 100%);
+    }
+
+    .logo {
+      position: absolute;
+      right: 50%;
+      bottom: 50%;
+      transform: translate(50%, 50%);
+      transition: all 0.6s ease-in-out;
+      font-size: 1.3em;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 3px;
+    }
+
+    .logo .logo-svg {
+      fill: white;
+      width: 30px;
+      height: 30px;
+    }
+
+    .icon {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+    }
+
+    .icon .svg {
+      fill: rgba(255, 255, 255, 0.797);
+      width: 100%;
+      transition: all 0.5s ease-in-out;
+    }
+
+    .box {
+      position: absolute;
+      padding: 10px;
+      text-align: right;
+      background: rgba(15, 23, 42, 0.55);
+      border-top: 1px solid rgba(34, 211, 238, 0.45);
+      border-right: 1px solid rgba(139, 92, 246, 0.45);
+      border-radius: 10% 13% 42% 0%/10% 12% 75% 0%;
+      box-shadow: rgba(0, 0, 0, 0.4) -7px 7px 29px 0px;
+      transform-origin: bottom left;
+      transition: all 1s ease-in-out;
+    }
+
+    .box::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      opacity: 0;
+      transition: all 0.5s ease-in-out;
+    }
+
+    .box:hover .svg {
+      fill: white;
+    }
+
+    .box1 {
+      width: 70%;
+      height: 70%;
+      bottom: -70%;
+      left: -70%;
+    }
+
+    .box1::before {
+      background: radial-gradient(circle at 30% 107%, #a78bfa 0%, #8b5cf6 45%, #22d3ee 90%);
+    }
+
+    .box1:hover::before {
+      opacity: 1;
+    }
+
+    .box1:hover .icon .svg {
+      filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.95));
+    }
+
+    .box2 {
+      width: 50%;
+      height: 50%;
+      bottom: -50%;
+      left: -50%;
+      transition-delay: 0.2s;
+    }
+
+    .box2::before {
+      background: radial-gradient(circle at 30% 107%, #22d3ee 0%, #06b6d4 90%);
+    }
+
+    .box2:hover::before {
+      opacity: 1;
+    }
+
+    .box2:hover .icon .svg {
+      filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.95));
+    }
+
+    .box3 {
+      width: 30%;
+      height: 30%;
+      bottom: -30%;
+      left: -30%;
+      transition-delay: 0.4s;
+    }
+
+    .box3::before {
+      background: radial-gradient(circle at 30% 107%, #8b5cf6 0%, #6d28d9 90%);
+    }
+
+    .box3:hover::before {
+      opacity: 1;
+    }
+
+    .box3:hover .icon .svg {
+      filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.95));
+    }
+
+    .box4 {
+      width: 10%;
+      height: 10%;
+      bottom: -10%;
+      left: -10%;
+      transition-delay: 0.6s;
+    }
+
+    .card:hover {
+      transform: scale(1.1);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.45), 0 0 40px rgba(139, 92, 246, 0.2);
+    }
+
+    .card:hover .box {
+      bottom: -1px;
+      left: -1px;
+    }
+
+    .card:hover .logo {
+      transform: translate(70px, -52px);
+      letter-spacing: 0px;
+    }
+
+    .footer-social-resources {
+      display: flex;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .footer-resources {
+      margin-left: auto;
+      /*  forces to extreme right */
+      padding-left: 300px;
+      /*  adds visual gap */
+      text-align: right;
+    }
+
+    /* Disc rotation */
+    .rotating-disc {
+      animation: disc-spin 20s linear infinite;
+    }
+
+    /* Keep logo upright */
+    .logo-holder {
+      animation: disc-spin-reverse 20s linear infinite;
+    }
+
+    /* Keyframes */
+    @keyframes disc-spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes disc-spin-reverse {
+      from {
+        transform: rotate(360deg);
+      }
+
+      to {
+        transform: rotate(0deg);
+      }
+    }
+
+    /* Staggered Menu Styles */
+    #staggeredMenuBtn {
+      position: fixed;
+      top: 1.5rem;
+      right: 2rem;
+      z-index: 9999;
+    }
+
+    @media (min-width: 1024px) {
+      #staggeredMenuBtn {
+        top: 1.75rem;
+        right: 2.5rem;
+      }
+    }
+
+    #staggeredMenuBtn.active .menu-line-1 {
+      transform: rotate(45deg) translateY(-2px);
+      width: 100% !important;
+    }
+
+    #staggeredMenuBtn.active .menu-line-2 {
+      opacity: 0;
+      transform: translateX(10px);
+    }
+
+    #staggeredMenuBtn.active .menu-line-3 {
+      transform: rotate(-45deg) translateY(2px);
+      width: 100% !important;
+    }
+
+    #staggeredMenu {
+      z-index: 9998;
+    }
+
+    .nav-link {
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-link.visible {
+      transform: translateX(0) !important;
+      opacity: 1 !important;
+    }
+
+    /* Menu overlay backdrop */
+    #menuBackdrop {
+      z-index: 9997;
+    }
+
+    .menu-btn {
+  position: relative;
+  background: transparent;
+  color: #e8e8e8;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  border-radius: 12px;
+  width: 140px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: all 0.35s ease;
+
+}
+
+/* Default text */
+.menu-btn::after {
+  content: "Explore More";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+
+  /* NeuralPrune theme gradient */
+  background: linear-gradient(
+    135deg,
+    #8b5cf6,   /* violet */
+    #06b6d4    /* cyan */
+  );
+
+  color: #ffffff;
+  letter-spacing: 0.14em;
+  
+
+  width: 100%;
+  height: 100%;
+  transform: translateY(0%);
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+
+/* Hover layer */
+.menu-btn::before {
+  content: "Menu";
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.8);
+  transform: translateY(100%);
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 2;
+}
+
+/* Hover animation */
+.menu-btn:hover::before {
+  transform: translateY(0%);
+}
+
+.menu-btn:hover::after {
+  transform: translateY(-120%);
+}
+
+/* Active press */
+.menu-btn:active {
+  transform: scale(0.95);
+}
+
+/* Focus cleanup */
+.menu-btn:focus {
+  outline: none;
+}
+
+#staggeredMenuBtn {
+  top: 14px; /* adjust here */
+}
+
+
+
+
+  </style>
+</head>
+
+<body class="bg-slate-900 text-slate-50 antialiased">
+  <!-- Custom Cursor -->
+  <div class="custom-cursor cursor-ring hidden md:block" id="cursorRing"></div>
+  <div class="custom-cursor cursor-dot hidden md:block" id="cursorDot"></div>
+
+<!-- Themed Menu Button -->
+<button id="staggeredMenuBtn" class="menu-btn">
+</button>
+
+
+  <!-- Menu Backdrop -->
+  <div id="menuBackdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 invisible transition-all duration-500"></div>
+
+  <!-- Staggered Navigation Menu -->
+  <div id="staggeredMenu" class="fixed top-0 right-0 h-full glass-strong border-l border-white/10 transition-all duration-500 opacity-0 invisible overflow-hidden" style="width: 0;">
+    <div class="h-full flex flex-col justify-center px-12 py-20">
+      <nav class="space-y-6">
+        <!-- Home -->
+        <a href="{{ url_for('home') }}" class="nav-link block group" style="transform: translateX(50px); opacity: 0;">
+          <span class="text-3xl sm:text-4xl font-black text-slate-500 hover:text-white transition-colors duration-300 relative">
+            Home
+            <span class="absolute -bottom-2 left-0 w-0 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 group-hover:w-full transition-all duration-500"></span>
+          </span>
+        </a>
+
+        <!-- Upload -->
+        <a href="{{ url_for('upload') }}" class="nav-link block group" style="transform: translateX(50px); opacity: 0; transition-delay: 0.1s;">
+          <span class="text-3xl sm:text-4xl font-black text-slate-500 hover:text-white transition-colors duration-300 relative">
+            Upload
+            <span class="absolute -bottom-2 left-0 w-0 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 group-hover:w-full transition-all duration-500"></span>
+          </span>
+        </a>
+
+        <!-- Grokking -->
+        <a href="{{ url_for('grokking') }}" class="nav-link block group" style="transform: translateX(50px); opacity: 0;">
+          <span class="text-3xl sm:text-4xl font-black text-slate-500 hover:text-white transition-colors duration-300 relative">
+            Grokking
+            <span class="absolute -bottom-2 left-0 w-0 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 group-hover:w-full transition-all duration-500"></span>
+          </span>
+        </a>        
+
+        <!-- Architecture -->
+        <a href="{{ url_for('architecture') }}" class="nav-link block group" style="transform: translateX(50px); opacity: 0; transition-delay: 0.2s;">
+          <span class="text-3xl sm:text-4xl font-black text-slate-500 hover:text-white transition-colors duration-300 relative">
+            Architecture
+            <span class="absolute -bottom-2 left-0 w-0 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 group-hover:w-full transition-all duration-500"></span>
+          </span>
+        </a>
+
+        <a href="{{ url_for('test') }}" class="nav-link block group" style="transform: translateX(50px); opacity: 0; transition-delay: 0.2s;">
+          <span class="text-3xl sm:text-4xl font-black text-slate-500 hover:text-white transition-colors duration-300 relative">
+            Test
+            <span class="absolute -bottom-2 left-0 w-0 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 group-hover:w-full transition-all duration-500"></span>
+          </span>
+        </a>
+
+        <!-- Credit -->
+        <a href="{{ url_for('credit') }}" class="nav-link block group" style="transform: translateX(50px); opacity: 0; transition-delay: 0.3s;">
+          <span class="text-3xl sm:text-4xl font-black text-slate-500 hover:text-white transition-colors duration-300 relative">
+            About Us
+            <span class="absolute -bottom-2 left-0 w-0 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 group-hover:w-full transition-all duration-500"></span>
+          </span>
+        </a>
+
+        <a href="{{ url_for('rpaper') }}" class="nav-link block group" style="transform: translateX(50px); opacity: 0; transition-delay: 0.3s;">
+          <span class="text-3xl sm:text-4xl font-black text-slate-500 hover:text-white transition-colors duration-300 relative">
+            Research
+            <span class="absolute -bottom-2 left-0 w-0 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 group-hover:w-full transition-all duration-500"></span>
+          </span>
+        </a>
+
+        <!-- Help -->
+        <a href="{{ url_for('help') }}" class="nav-link block group" style="transform: translateX(50px); opacity: 0; transition-delay: 0.4s;">
+          <span class="text-3xl sm:text-4xl font-black text-slate-500 hover:text-white transition-colors duration-300 relative">
+            Help
+            <span class="absolute -bottom-2 left-0 w-0 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 group-hover:w-full transition-all duration-500"></span>
+          </span>
+        </a>
+      </nav>
+
+      <!-- Decorative elements -->
+      <div class="absolute bottom-12 left-12 right-12">
+        <div class="h-px bg-gradient-to-r from-violet-500/50 to-cyan-500/50 mb-6"></div>
+        <p class="text-slate-500 text-sm">TruboCompute</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Menu (for small screens) -->
+  <div id="mobileMenu"
+    class="md:hidden fixed top-0 left-0 right-0 bottom-0 glass-strong z-[9996] transition-all duration-300 opacity-0 invisible">
+    <div class="h-full flex flex-col items-center justify-center space-y-8">
+      <a href="{{ url_for('home') }}"
+        class="text-2xl font-bold text-slate-300 hover:text-white transition-colors cursor-pointer mobile-link">
+        Home
+      </a>
+      <a href="{{ url_for('upload') }}"
+        class="text-2xl font-bold text-slate-300 hover:text-white transition-colors cursor-pointer mobile-link">
+        Upload
+      </a>
+      <a href="{{ url_for('grokking') }}"
+        class="text-2xl font-bold text-slate-300 hover:text-white transition-colors cursor-pointer mobile-link">
+        Grokking
+      </a>
+      <a href="{{ url_for('architecture') }}"
+        class="text-2xl font-bold text-slate-300 hover:text-white transition-colors cursor-pointer mobile-link">
+        Architecture
+      </a>
+      <a href="{{ url_for('credit') }}"
+        class="text-2xl font-bold text-slate-300 hover:text-white transition-colors cursor-pointer mobile-link">
+        Credit
+      </a>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-transparent pointer-events-none">
+    <div class="w-full px-8 lg:px-10">
+      <div class="flex items-center justify-between h-16 lg:h-20">
+        <!-- Logo -->
+        <a href="#hero" id="navLogo" class="flex items-center gap-3 -ml-6 origin-left pointer-events-auto">
+          <div class="relative w-44 h-44 lg:w-52 lg:h-52">
+            <!-- Logo image -->
+            <img src="{{ url_for('static', filename='assets/images/logo.png') }}" alt="NeuralPrune Logo"
+              class="relative w-full h-full object-contain rounded-xl" />
+          </div>
+        </a>
+
+        <!-- Spacer for layout balance -->
+        <div class="w-10"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section id="hero" class="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
+    <!-- Background Layer 1 -->
+    <div id="heroBg" class="absolute inset-0 w-full h-full" style="will-change: transform;">
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
+        style="background-image: url('/static/assets/images/hero-bg2.jpeg');filter: blur(2px);"></div>
+      <div class="bg-overlay-radial"></div>
+    </div>
+
+    <!-- Background Layer 2 - Particles -->
+    <div id="heroBgLayer2" class="absolute inset-0 w-full h-full pointer-events-none" style="will-change: transform;">
+      <div class="absolute inset-0 opacity-40" id="particlesContainer"></div>
+    </div>
+
+    <!-- Gradient vignette -->
+    <div class="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-transparent to-slate-900 pointer-events-none">
+    </div>
+
+    <!-- Content -->
+    <div id="heroContent" class="relative z-10 max-w-6xl mx-auto px-6 lg:px-8 py-20 text-center"
+      style="will-change: transform;">
+      <div class="max-w-4xl mx-auto">
+        <!-- Badge -->
+        <div class="inline-flex items-center gap-3 px-5 py-2.5 rounded-full glass mb-10 hero-badge">
+          <span class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
+
+          <img src="{{ url_for('static', filename='assets/images/logo_head.png') }}" alt="Project Logo"
+            class="h-8 sm:h-9 md:h-10 object-contain" />
+        </div>
+
+
+        <!-- Headline -->
+        <h1
+          class="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[0.95] mb-8 hero-headline text-glow">
+          Efficient Neural
+          <br>
+          <span class="gradient-text">Model Pruning</span>
+        </h1>
+
+        <!-- Subheadline -->
+        <p
+          class="text-xl sm:text-2xl text-slate-300 max-w-2xl mx-auto mb-12 leading-relaxed hero-subheadline font-light">
+          Smaller models. Faster inference. Smart intelligence.
+          <br class="hidden sm:block">
+          <span class="text-slate-400">Optimize your Models without compromising performance.</span>
+        </p>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-5 hero-buttons">
+          <a href="{{ url_for('upload') }}"
+            class="group px-8 py-3.5 bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600 text-white font-bold text-md rounded-2xl hover:shadow-2xl hover:shadow-violet-500/30 transition-all duration-300 btn-lift flex items-center gap-3 cursor-pointer">
+            Begin Here
+            <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+          </a>
+          <a href="#metrics"
+            class="px-9 py-3.5 glass-strong text-white font-bold text-md rounded-2xl hover:bg-white/10 transition-all duration-300 btn-lift cursor-pointer border border-white/10">
+            About Us
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll indicator -->
+    <div id="scrollIndicator"
+      class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 text-slate-500">
+      <span class="text-xs font-semibold uppercase tracking-[0.2em]">Scroll to explore</span>
+      <div class="w-6 h-10 border-2 border-slate-600 rounded-full flex justify-center pt-2">
+        <div class="w-1.5 h-3 bg-gradient-to-b from-violet-500 to-cyan-500 rounded-full animate-bounce"></div>
+      </div>
+    </div>
+
+    <!-- Bottom gradient fade -->
+    <div
+      class="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none">
+    </div>
+  </section>
+
+  <!-- Story Section -->
+  <section id="story" class="relative min-h-screen w-full py-32 overflow-hidden">
+    <!-- Background with parallax -->
+    <div id="storyBg" class="absolute inset-0 w-full h-[130%] -top-[15%]" style="will-change: transform;">
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style="background-image: url('/static/assets/images/story-bg.jpg');"></div>
+      <div class="bg-overlay-light"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-900 via-transparent to-slate-900"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
+      <!-- Section header -->
+      <div class="text-center mb-24 story-header">
+        <span
+          class="inline-block px-4 py-1.5 bg-violet-500/20 text-violet-300 text-xs font-bold uppercase tracking-[0.2em] rounded-full mb-6">The
+          Concepts</span>
+        <h2 class="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight">
+          From Complexity to <span class="gradient-text">Clarity</span>
+        </h2>
+      </div>
+
+      <!-- Story blocks -->
+      <div class="space-y-40">
+        <!-- Block 1 -->
+        <div class="story-block flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+          <div class="flex-1 max-w-xl">
+            <div class="flex items-center gap-4 mb-6">
+              <span class="text-6xl font-black gradient-text opacity-50">01</span>
+              <div class="h-px flex-1 bg-gradient-to-r from-violet-500/50 to-transparent"></div>
+            </div>
+            <span
+              class="inline-block px-4 py-1.5 bg-violet-500/20 text-violet-300 text-xs font-bold uppercase tracking-wider rounded-full mb-4">The
+              Challenge</span>
+            <h3 class="text-3xl sm:text-4xl font-black text-white mb-6 tracking-tight">The Cost of Complexity</h3>
+            <p class="text-slate-300 text-lg leading-relaxed mb-6">
+              Modern AI models contain billions of parameters. The larger the model, the slower the inference, the
+              higher the ENERGY cost. Organizations struggle to deploy state-of-the-art models at scale.
+            </p>
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-1 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full"></div>
+              <span class="text-cyan-400 font-semibold">Billions of parameters</span>
+            </div>
+          </div>
+          <div class="flex-1 flex justify-center">
+            <div class="relative w-72 h-72 sm:w-96 sm:h-96">
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="absolute w-full h-full border-2 border-violet-500/30 rounded-full animate-pulse-glow"></div>
+                <div class="absolute w-3/4 h-3/4 border-2 border-cyan-500/30 rounded-full animate-pulse-glow"
+                  style="animation-delay: 0.3s;"></div>
+                <div class="absolute w-1/2 h-1/2 border-2 border-indigo-500/30 rounded-full animate-pulse-glow"
+                  style="animation-delay: 0.6s;"></div>
+              </div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-28 h-28 glass-strong rounded-3xl flex items-center justify-center glow-violet">
+                  <i data-lucide="cpu" class="w-14 h-14 text-violet-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Block 2 -->
+        <div class="story-block flex flex-col lg:flex-row-reverse items-center gap-16 lg:gap-24">
+          <div class="flex-1 max-w-xl">
+            <div class="flex items-center gap-4 mb-6">
+              <span class="text-6xl font-black gradient-text opacity-50">02</span>
+              <div class="h-px flex-1 bg-gradient-to-r from-cyan-500/50 to-transparent"></div>
+            </div>
+            <span
+              class="inline-block px-4 py-1.5 bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-wider rounded-full mb-4">The
+              Impact</span>
+            <h3 class="text-3xl sm:text-4xl font-black text-white mb-6 tracking-tight">Performance Bottlenecks</h3>
+            <p class="text-slate-300 text-lg leading-relaxed mb-6">
+              Every millisecond counts in production. Large models consume excessive memory, drain battery life on edge
+              devices, and create unsustainable cloud computing costs.
+            </p>
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-1 bg-gradient-to-r from-cyan-500 to-violet-500 rounded-full"></div>
+              <span class="text-violet-400 font-semibold">Unsustainable costs</span>
+            </div>
+          </div>
+          <div class="flex-1 flex justify-center">
+            <div class="relative w-72 h-72 sm:w-96 sm:h-96">
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="absolute w-full h-full border-2 border-cyan-500/30 rounded-full animate-pulse-glow"
+                  style="animation-delay: 0.5s;"></div>
+                <div class="absolute w-3/4 h-3/4 border-2 border-violet-500/30 rounded-full animate-pulse-glow"
+                  style="animation-delay: 0.8s;"></div>
+                <div class="absolute w-1/2 h-1/2 border-2 border-indigo-500/30 rounded-full animate-pulse-glow"
+                  style="animation-delay: 1.1s;"></div>
+              </div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-28 h-28 glass-strong rounded-3xl flex items-center justify-center glow-cyan">
+                  <i data-lucide="gauge" class="w-14 h-14 text-cyan-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Block 3 -->
+        <div class="story-block flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+          <div class="flex-1 max-w-xl">
+            <div class="flex items-center gap-4 mb-6">
+              <span class="text-6xl font-black gradient-text opacity-50">03</span>
+              <div class="h-px flex-1 bg-gradient-to-r from-violet-500/50 to-transparent"></div>
+            </div>
+            <span
+              class="inline-block px-4 py-1.5 bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-full mb-4">The
+              Solution</span>
+            <h3 class="text-3xl sm:text-4xl font-black text-white mb-6 tracking-tight">Precision Pruning</h3>
+            <p class="text-slate-300 text-lg leading-relaxed mb-6">
+              We identify and remove redundant neurons without losing accuracy. Our algorithm analyzes each layer
+              independently to find the optimal compression ratio.
+            </p>
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"></div>
+              <span class="text-emerald-400 font-semibold">Minimal accuracy loss</span>
+            </div>
+          </div>
+          <div class="flex-1 flex justify-center">
+            <div class="relative w-72 h-72 sm:w-96 sm:h-96">
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="absolute w-full h-full border-2 border-emerald-500/30 rounded-full animate-pulse-glow"
+                  style="animation-delay: 1s;"></div>
+                <div class="absolute w-3/4 h-3/4 border-2 border-cyan-500/30 rounded-full animate-pulse-glow"
+                  style="animation-delay: 1.3s;"></div>
+                <div class="absolute w-1/2 h-1/2 border-2 border-violet-500/30 rounded-full animate-pulse-glow"
+                  style="animation-delay: 1.6s;"></div>
+              </div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-28 h-28 glass-strong rounded-3xl flex items-center justify-center"
+                  style="box-shadow: 0 0 40px rgba(16, 185, 129, 0.3);">
+                  <i data-lucide="scissors" class="w-14 h-14 text-emerald-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Optimize Graph Section -->
+  <section id="optimize-graph" class="relative w-full py-24 overflow-hidden">
+    <div class="absolute inset-0">
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style="background-image: url('/static/assets/images/closing-bg.jpg');"></div>
+      <div class="bg-overlay-light"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/70 to-slate-900/90"></div>
+    </div>
+
+    <div class="relative z-10 max-w-4xl mx-auto px-6 lg:px-8 ">
+      <div class="text-center mb-10">
+        <h2 class="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight">
+          Gradient  <span class="gradient-text">Landscape</span>
+        </h2>
+      </div>
+
+      <div class="glass-strong rounded-3xl border border-white/10 p-8 sm:p-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="rounded-2xl overflow-hidden border border-cyan-400/30 bg-slate-900/50">
+              <img src="{{ url_for('static', filename='assets/images/contour1.png') }}" alt="Contour Graph 1"
+                class="w-full h-full object-cover" />
+            </div>
+            <p class="text-center text-cyan-300 font-semibold mt-3">Base Model</p>
+          </div>
+          <div>
+            <div class="rounded-2xl overflow-hidden border border-violet-400/30 bg-slate-900/50">
+              <img src="{{ url_for('static', filename='assets/images/contour2.png') }}" alt="Contour Graph 2"
+                class="w-full h-full object-cover" />
+            </div>
+            <p class="text-center text-cyan-300 font-semibold mt-3">Mask/Prune Model</p>
+          </div>
+        </div>
+
+        <p class="text-blue-300 mt-8 leading-relaxed text-center graph-para-glow">
+          The dense network demonstrates a complex, high-curvature non-convex topology with numerous narrow minima and saddle points. Such sharp minima correspond to large Hessian eigenvalues, making gradient descent sensitive to learning rate selection and prone to oscillatory behavior.
+          <br><br>
+          Pruning imposes structural sparsity, effectively restricting optimization to a lower-dimensional subspace. This constraint smooths the curvature profile, reduces extreme Hessian eigenvalues, and promotes wider, flatter basins of attraction. Consequently, gradient descent trajectories become more stable, exhibit reduced oscillations, and converge more efficiently toward well-conditioned minima.
+          <br><br>
+          This transformation highlights how structural sparsification influences the geometry of the loss surface and the dynamics of optimization.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="relative min-h-screen w-full py-32 overflow-hidden">
+    <!-- Background with parallax -->
+    <div id="featuresBg" class="absolute inset-0 w-full h-[130%] -top-[15%]" style="will-change: transform;">
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style="background-image: url('/static/assets/images/feature-bg.jpg');"></div>
+      <div class="bg-overlay-light"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-900"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="relative z-10">
+      <!-- Section header -->
+      <div class="max-w-7xl mx-auto px-6 lg:px-8 mb-20 features-header">
+        <div class="text-center">
+          <span
+            class="inline-block px-4 py-1.5 bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-[0.2em] rounded-full mb-6">Key
+            Features</span>
+          <h2 class="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight mb-6">
+            Built for <span class="gradient-text">Performance</span>
+          </h2>
+          <p class="text-slate-400 text-xl max-w-2xl mx-auto">
+            Our neural pruning pipeline delivers measurable improvements across every metric that matters.
+          </p>
+        </div>
+      </div>
+
+      <!-- Cards Grid -->
+      <div class="max-w-7xl mx-auto px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" style="perspective: 1000px;">
+          <!-- Card 1 -->
+          <div class="feature-card group" style="transform-style: preserve-3d;">
+            <div class="relative h-full glass-strong rounded-3xl p-8 overflow-hidden card-depth border border-white/5">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              </div>
+              <div
+                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity">
+              </div>
+
+              <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mb-8 glow-violet">
+                <i data-lucide="zap" class="w-8 h-8 text-white"></i>
+              </div>
+
+              <h3 class="text-2xl font-bold text-white mb-4">Stable <br> Training</h3>
+              <p class="text-slate-400 mb-8 leading-relaxed">
+                Maintains training stability during pruning and masking by carefully preserving
+                important neurons and weight distributions across layers.
+              </p>
+
+              <div class="flex items-baseline gap-3">
+                <span
+                  class="text-3xl font-black bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                  Robust
+                </span>
+                <span class="text-slate-500 font-medium">Convergence</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="feature-card group" style="transform-style: preserve-3d;">
+            <div class="relative h-full glass-strong rounded-3xl p-8 overflow-hidden card-depth border border-white/5">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              </div>
+              <div
+                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity">
+              </div>
+
+              <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-8 glow-violet">
+                <i data-lucide="target" class="w-8 h-8 text-white"></i>
+              </div>
+
+              <h3 class="text-2xl font-bold text-white mb-4">Precision Accuracy</h3>
+              <p class="text-slate-400 mb-8 leading-relaxed">Maintain approximately 100% of original accuracy while dramatically
+                reducing model size, making it light weight for multiple application.</p>
+
+              <div class="flex flex-col items-end gap-2">
+                <span
+                  class="text-5xl font-black bg-gradient-to-r from-violet-500 to-purple-500 bg-clip-text text-transparent">~100%</span>
+                <span class="text-slate-500 font-medium w-full text-right">Accuracy</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="feature-card group" style="transform-style: preserve-3d;">
+            <div class="relative h-full glass-strong rounded-3xl p-8 overflow-hidden card-depth border border-white/5">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              </div>
+              <div
+                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity">
+              </div>
+
+              <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center mb-8 glow-cyan">
+                <i data-lucide="trending-up" class="w-8 h-8 text-white"></i>
+              </div>
+
+              <h3 class="text-2xl font-bold text-white mb-4">Lightweight Models</h3>
+              <p class="text-slate-400 mb-8 leading-relaxed">
+                Removes unnecessary neurons and channels to significantly reduce model size,
+                making deployment feasible on memory-constrained systems.
+              </p>
+
+              <div class="flex items-baseline gap-3">
+                <span
+                  class="text-5xl font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                  20%
+                </span>
+                <span class="text-slate-500 font-medium">Size Reduction</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="feature-card group" style="transform-style: preserve-3d;">
+            <div class="relative h-full glass-strong rounded-3xl p-8 overflow-hidden card-depth border border-white/5">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              </div>
+              <div
+                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity">
+              </div>
+
+              <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-8"
+                style="box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);">
+                <i data-lucide="layers" class="w-8 h-8 text-white"></i>
+              </div>
+
+              <h3 class="text-2xl font-bold text-white mb-4">Energy Efficient Inference</h3>
+              <p class="text-slate-400 mb-8 leading-relaxed">
+                Reduced FLOPs and memory access result in lower energy consumption,
+                ideal for mobile, IoT, and embedded AI applications.
+              </p>
+
+              <div class="flex items-baseline gap-3">
+                <span
+                  class="text-5xl font-black bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
+                  Green
+                </span>
+                <span class="text-slate-500 font-medium">AI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Visual Highlight Section -->
+  <section id="visual" class="relative min-h-screen w-full flex items-center overflow-hidden">
+    <!-- Full-width background with parallax -->
+    <div id="visualBg" class="absolute inset-0 w-full h-[140%] -top-[20%]" style="will-change: transform;">
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style="background-image: url('/static/assets/images/visual-bg.jpg');"></div>
+      <div class="bg-overlay-radial"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-900 via-transparent to-slate-900"></div>
+    </div>
+
+    <!-- Content container -->
+    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-8 py-32">
+      <div class="grid lg:grid-cols-2 gap-20 items-center">
+        <!-- Text content -->
+        <div class="visual-content">
+          <span
+            class="inline-block px-4 py-1.5 bg-violet-500/20 text-violet-300 text-xs font-bold uppercase tracking-[0.2em] rounded-full mb-6">The
+            Technology</span>
+          <h2 class="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight mb-8">
+            How It <span class="gradient-text">Works</span>
+          </h2>
+          <p class="text-white text-xl leading-relaxed mb-10"><b>
+              Our proprietary pruning algorithm analyzes neural network architectures layer by layer,
+              identifying redundant connections and parameters that can be removed without impacting
+              model performance.</b>
+          </p>
+
+          <!-- Highlight items -->
+          <div class="space-y-4 mb-12">
+            <div
+              class="flex items-center gap-5 p-5 glass-strong rounded-2xl hover:bg-white/5 transition-all cursor-pointer border border-white/5">
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center glow-violet">
+                <i data-lucide="layers" class="w-7 h-7 text-white"></i>
+              </div>
+              <div>
+                <h4 class="text-white font-bold text-lg">Layer / Model Analysis</h4>
+                <p class="text-slate-400 text-sm">
+                  Structural analysis of neural network layers to understand parameter distribution
+                  and computational complexity.
+                </p>
+              </div>
+            </div>
+            <div
+              class="flex items-center gap-5 p-5 glass-strong rounded-2xl hover:bg-white/5 transition-all cursor-pointer border border-white/5">
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center glow-cyan">
+                <i data-lucide="activity" class="w-7 h-7 text-white"></i>
+              </div>
+              <div>
+                <h4 class="text-white font-bold text-lg">Importance Score Calculation</h4>
+                <p class="text-slate-400 text-sm">
+                  Computes importance scores for neurons or channels using magnitude,
+                  sensitivity, or gradient-based criteria.
+                </p>
+              </div>
+            </div>
+            <div
+              class="flex items-center gap-5 p-5 glass-strong rounded-2xl hover:bg-white/5 transition-all cursor-pointer border border-white/5">
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center"
+                style="box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);">
+                <i data-lucide="scissors" class="w-7 h-7 text-white"></i>
+              </div>
+              <div>
+                <h4 class="text-white font-bold text-lg">Mask / Prune Model</h4>
+                <p class="text-slate-400 text-sm">
+                  Applies structured or unstructured masks to remove low-importance parameters
+                  while preserving model accuracy.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <a href="#metrics"
+            class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-2xl hover:shadow-xl hover:shadow-violet-500/25 transition-all duration-300 btn-lift cursor-pointer">
+            See The Results
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </a>
+        </div>
+
+        <!-- Visual element -->
+        <div class="flex justify-center lg:justify-end">
+          <div id="visualSphere" class="relative w-80 h-80 sm:w-[28rem] sm:h-[28rem]">
+            <!-- Central sphere -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="relative w-56 h-56 sm:w-72 sm:h-72">
+                <!-- Outer glow rings -->
+                <div
+                  class="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse-glow">
+                </div>
+                <div
+                  class="absolute -inset-8 bg-gradient-to-br from-violet-500/10 to-cyan-500/10 rounded-full blur-3xl">
+                </div>
+
+                <!-- Main sphere -->
+                <div
+                  class="absolute inset-0 glass-strong rounded-full flex items-center justify-center border border-white/10">
+                  <div
+                    class="w-36 h-36 sm:w-48 sm:h-48 rounded-full bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-600 flex items-center justify-center glow-violet rotating-disc">
+                    <div class="logo-holder">
+                      <img src="{{ url_for('static', filename='assets/images/logo2.png') }}" alt="Logo"
+                        class="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Orbiting elements -->
+                <div class="absolute inset-0" style="animation: spin 10s linear infinite;">
+                  <div
+                    class="absolute w-5 h-5 bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full shadow-lg shadow-cyan-500/50"
+                    style="top: 50%; left: 100%; transform: translate(-50%, -50%);"></div>
+                </div>
+                <div class="absolute inset-0" style="animation: spin 14s linear infinite; animation-delay: 2s;">
+                  <div
+                    class="absolute w-4 h-4 bg-gradient-to-r from-violet-400 to-violet-500 rounded-full shadow-lg shadow-violet-500/50"
+                    style="top: 50%; left: 100%; transform: translate(-50%, -50%);"></div>
+                </div>
+                <div class="absolute inset-0" style="animation: spin 18s linear infinite; animation-delay: 4s;">
+                  <div
+                    class="absolute w-3 h-3 bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full shadow-lg shadow-indigo-500/50"
+                    style="top: 50%; left: 100%; transform: translate(-50%, -50%);"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Connection lines SVG -->
+            <svg class="absolute inset-0 w-full h-full" style="transform: rotate(-90deg);">
+              <defs>
+                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.4" />
+                  <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.4" />
+                </linearGradient>
+              </defs>
+              <circle cx="50%" cy="50%" r="70" fill="none" stroke="url(#lineGradient)" stroke-width="2"
+                stroke-dasharray="8 8" opacity="0.5"></circle>
+              <circle cx="50%" cy="50%" r="100" fill="none" stroke="url(#lineGradient)" stroke-width="1.5"
+                stroke-dasharray="6 6" opacity="0.4"></circle>
+              <circle cx="50%" cy="50%" r="130" fill="none" stroke="url(#lineGradient)" stroke-width="1"
+                stroke-dasharray="4 4" opacity="0.3"></circle>
+              <circle cx="50%" cy="50%" r="160" fill="none" stroke="url(#lineGradient)" stroke-width="1"
+                stroke-dasharray="3 3" opacity="0.2"></circle>
+            </svg>
+
+            <!-- Floating particles -->
+            <div class="absolute w-3 h-3 bg-violet-400/60 rounded-full"
+              style="top: 20%; left: 15%; animation: float 4s ease-in-out infinite;"></div>
+            <div class="absolute w-2 h-2 bg-cyan-400/60 rounded-full"
+              style="top: 70%; left: 20%; animation: float 5s ease-in-out infinite; animation-delay: 1s;"></div>
+            <div class="absolute w-2.5 h-2.5 bg-indigo-400/60 rounded-full"
+              style="top: 30%; left: 80%; animation: float 4.5s ease-in-out infinite; animation-delay: 2s;"></div>
+            <div class="absolute w-2 h-2 bg-violet-400/60 rounded-full"
+              style="top: 80%; left: 75%; animation: float 5.5s ease-in-out infinite; animation-delay: 0.5s;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Metrics Section -->
+  <section id="metrics" class="relative min-h-screen w-full py-32 overflow-hidden">
+    <!-- Background -->
+    <div class="absolute inset-0">
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style="background-image: url('/static/assets/images/metrics-bg.jpg');"></div>
+      <div class="bg-overlay-light"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-900"></div>
+      <div class="absolute inset-0 opacity-[0.02]"
+        style="background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 60px 60px;">
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
+      <!-- Header -->
+      <div class="text-center mb-20 metrics-header">
+        <span
+          class="inline-block px-4 py-1.5 bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-[0.2em] rounded-full mb-6">Reviews</span>
+        <h2 class="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight mb-6">
+          User <span class="gradient-text">Reviews</span>
+        </h2>
+        <p class="text-slate-400 text-xl max-w-2xl mx-auto">
+          Feedback from users building faster and lighter AI deployments with NeuralPrune.
+        </p>
+      </div>
+
+      <!-- Metrics grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" style="perspective: 1000px;">
+        <!-- Metric 1 -->
+        <div class="metric-card group" style="transform-style: preserve-3d;">
+          <div class="relative h-full glass-strong rounded-3xl p-8 overflow-hidden card-depth border border-white/5">
+            <div
+              class="absolute -top-20 -right-20 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            </div>
+
+            <div
+              class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-8"
+              style="box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);">
+              <i data-lucide="trending-down" class="w-7 h-7 text-white"></i>
+            </div>
+
+            <div class="mb-4">
+              <span
+                class="text-6xl font-black bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">4.9/5</span>
+            </div>
+
+            <h3 class="text-white font-bold text-xl mb-3">Startup ML Team</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">"We pruned and deployed in hours. Inference got faster and our model quality stayed stable."</p>
+
+            <div
+              class="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 2 -->
+        <div class="metric-card group" style="transform-style: preserve-3d;">
+          <div class="relative h-full glass-strong rounded-3xl p-8 overflow-hidden card-depth border border-white/5">
+            <div
+              class="absolute -top-20 -right-20 w-40 h-40 bg-violet-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            </div>
+
+            <div
+              class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-8 glow-violet">
+              <i data-lucide="clock" class="w-7 h-7 text-white"></i>
+            </div>
+
+            <div class="mb-4">
+              <span
+                class="text-6xl font-black bg-gradient-to-r from-violet-500 to-purple-500 bg-clip-text text-transparent">4.8/5</span>
+            </div>
+
+            <h3 class="text-white font-bold text-xl mb-3">Research Lab</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">"The pruning workflow is clean and reproducible. Great for comparing experiments quickly."</p>
+
+            <div
+              class="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 3 -->
+        <div class="metric-card group" style="transform-style: preserve-3d;">
+          <div class="relative h-full glass-strong rounded-3xl p-8 overflow-hidden card-depth border border-white/5">
+            <div
+              class="absolute -top-20 -right-20 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            </div>
+
+            <div
+              class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center mb-8 glow-cyan">
+              <i data-lucide="award" class="w-7 h-7 text-white"></i>
+            </div>
+
+            <div class="mb-4">
+              <span
+                class="text-6xl font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">4.7/5</span>
+            </div>
+
+            <h3 class="text-white font-bold text-xl mb-3">Edge AI Engineer</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">"Loved the insights and retraining flow. It made edge-device optimization practical."</p>
+
+            <div
+              class="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 4 -->
+        <div class="metric-card group" style="transform-style: preserve-3d;">
+          <div class="relative h-full glass-strong rounded-3xl p-8 overflow-hidden card-depth border border-white/5">
+            <div
+              class="absolute -top-20 -right-20 w-40 h-40 bg-orange-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            </div>
+
+            <div
+              class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center mb-8"
+              style="box-shadow: 0 0 30px rgba(249, 115, 22, 0.3);">
+              <i data-lucide="server" class="w-7 h-7 text-white"></i>
+            </div>
+
+            <div class="mb-4">
+              <span
+                class="text-6xl font-black bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">4.9/5</span>
+            </div>
+
+            <h3 class="text-white font-bold text-xl mb-3">Student Project Team</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">"The UI is easy to use and the results are clear. Perfect for learning pruning end to end."</p>
+
+            <div
+              class="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom CTA
+      <div class="mt-24 text-center">
+        <p class="text-slate-500 text-lg mb-8">Ready to transform your AI deployment?</p>
+        <a href="#closing"
+          class="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600 text-white font-bold text-lg rounded-2xl hover:shadow-2xl hover:shadow-violet-500/30 transition-all duration-300 btn-lift cursor-pointer">
+          Get Started Today
+          <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </a>
+      </div> -->
+    </div>
+  </section>
+
+  <!-- Closing Section -->
+  <section id="closing" class="relative w-full">
+    <!-- CTA Section -->
+    <div class="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+      <!-- Background -->
+      <div class="absolute inset-0">
+        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style="background-image: url('/static/assets/images/closing-bg.jpg');"></div>
+        <div class="bg-overlay-radial"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/80 to-slate-900"></div>
+      </div>
+
+      <!-- Animated gradient orbs -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          class="absolute w-[700px] h-[700px] bg-violet-600/25 rounded-full blur-[150px] -top-64 -left-64 animate-pulse-glow"
+          style="animation-duration: 4s;"></div>
+        <div
+          class="absolute w-[600px] h-[600px] bg-cyan-600/25 rounded-full blur-[120px] -bottom-48 -right-48 animate-pulse-glow"
+          style="animation-duration: 5s; animation-delay: 1s;"></div>
+      </div>
+
+      <!-- Noise overlay -->
+      <div class="absolute inset-0 noise-overlay pointer-events-none"></div>
+
+      <!-- Content -->
+      <div class="relative z-10 max-w-4xl mx-auto px-6 lg:px-8 text-center py-32 closing-content">
+
+
+
+        <!-- Headline -->
+        <h2 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight mb-8 text-glow">
+          Ready to Optimize
+          <br>
+          <span class="gradient-text">Know How...</span>
+        </h2>
+
+        <!-- Description -->
+        <p class="text-slate-300 text-xl md:text-2xl max-w-2xl mx-auto mb-12 leading-relaxed">
+          Our pipeline is ready to reduce costs and improve performance
+          with neural model pruning.
+        </p>
+
+        <!-- Email form -->
+        <!-- <form id="emailForm" class="max-w-lg mx-auto mb-10">
+          <div class="flex flex-col sm:flex-row gap-4">
+            <div class="relative flex-1">
+              <i data-lucide="mail" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
+              <input type="email" id="emailInput" placeholder="Enter your email" required
+                class="w-full pl-14 pr-5 py-5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all text-lg">
+            </div>
+            <button type="submit" id="submitBtn"
+              class="px-8 py-5 bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600 text-white font-bold text-lg rounded-2xl hover:shadow-2xl hover:shadow-violet-500/30 transition-all duration-300 btn-lift flex items-center justify-center gap-3 whitespace-nowrap cursor-pointer">
+              <span id="btnText">Get Early Access</span>
+              <i data-lucide="arrow-right" class="w-5 h-5" id="btnIcon"></i>
+            </button>
+          </div>
+        </form> -->
+        <a href="{{ url_for('help') }}"
+          class="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600 text-white font-bold text-lg rounded-2xl hover:shadow-2xl hover:shadow-violet-500/30 transition-all duration-300 btn-lift cursor-pointer">
+          Get Started Here
+          <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </a>
+      </div>
+
+      <!-- Trust indicators -->
+      <!-- <p class="text-slate-500 text-sm">No spam. Unsubscribe anytime. Join 10,000+ developers.</p>
+      </div> -->
+    </div>
+
+    <!-- Footer -->
+    <footer class="relative border-t border-white/5 bg-[#050810]">
+      <div class="max-w-7xl mx-auto px-6 lg:px-8 py-20">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 lg:gap-14">
+          <!-- Brand -->
+          <div class="col-span-2 md:col-span-4 lg:col-span-2">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="relative w-10 h-10">
+                <div
+                  class="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-xl opacity-80 glow-violet">
+                </div>
+                <i data-lucide="sparkles" class="absolute inset-0 m-auto w-6 h-6 text-white"></i>
+              </div>
+              <span class="text-white font-bold text-xl">
+                Turbo<span class="gradient-text">Compute</span>
+              </span>
+            </div>
+            <p class="text-slate-500 text-base leading-relaxed mb-8 max-w-sm">
+              Efficient neural model pruning for the next generation of AI deployment. Smaller, faster, smarter.
+            </p>
+
+            <!-- Social links -->
+            <!-- <div class="flex items-center gap-4">
+              <a href="#"
+                class="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer border border-white/5">
+                <i data-lucide="github" class="w-5 h-5"></i>
+              </a>
+              <a href="#"
+                class="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer border border-white/5">
+                <i data-lucide="twitter" class="w-5 h-5"></i>
+              </a>
+              <a href="#"
+                class="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer border border-white/5">
+                <i data-lucide="linkedin" class="w-5 h-5"></i>
+              </a>
+              <a href="#"
+                class="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer border border-white/5">
+                <i data-lucide="youtube" class="w-5 h-5"></i>
+              </a>
+            </div> -->
+          </div>
+
+          <!-- Links -->
+          <!-- <div>
+            <h4 class="text-white font-bold text-lg mb-6">Product</h4>
+            <ul class="space-y-4">
+              <li><a href="#"
+                  class="text-slate-500 hover:text-white text-base transition-colors cursor-pointer">Features</a></li>
+              <li><a href="#"
+                  class="text-slate-500 hover:text-white text-base transition-colors cursor-pointer">Pricing</a></li>
+              <li><a href="#"
+                  class="text-slate-500 hover:text-white text-base transition-colors cursor-pointer">Documentation</a>
+              </li>
+              <li><a href="#" class="text-slate-500 hover:text-white text-base transition-colors cursor-pointer">API
+                  Reference</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-white font-bold text-lg mb-6">Company</h4>
+            <ul class="space-y-4">
+              <li><a href="#" class="text-slate-500 hover:text-white text-base transition-colors cursor-pointer">About
+                  Us</a></li>
+              <li><a href="#"
+                  class="text-slate-500 hover:text-white text-base transition-colors cursor-pointer">Blog</a></li>
+              <li><a href="#"
+                  class="text-slate-500 hover:text-white text-base transition-colors cursor-pointer">Careers</a></li>
+              <li><a href="#" class="text-slate-500 hover:text-white text-base transition-colors cursor-pointer">Press
+                  Kit</a></li>
+            </ul>
+          </div> -->
+
+          <!-- Socials Card -->
+          <!-- From Uiverse.io by vinodjangid07 -->
+
+          <!-- Socials Card -->
+          <div class="footer-social-card">
+            <!-- your card here -->
+            <div class="card">
+              <div class="background">
+              </div>
+              <div class="logo">
+                Socials
+              </div>
+
+              <a href="#">
+                <div class="box box1"><span class="icon"><svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg"
+                      class="svg">
+                      <path
+                        d="M 9.9980469 3 C 6.1390469 3 3 6.1419531 3 10.001953 L 3 20.001953 C 3 23.860953 6.1419531 27 10.001953 27 L 20.001953 27 C 23.860953 27 27 23.858047 27 19.998047 L 27 9.9980469 C 27 6.1390469 23.858047 3 19.998047 3 L 9.9980469 3 z M 22 7 C 22.552 7 23 7.448 23 8 C 23 8.552 22.552 9 22 9 C 21.448 9 21 8.552 21 8 C 21 7.448 21.448 7 22 7 z M 15 9 C 18.309 9 21 11.691 21 15 C 21 18.309 18.309 21 15 21 C 11.691 21 9 18.309 9 15 C 9 11.691 11.691 9 15 9 z M 15 11 A 4 4 0 0 0 11 15 A 4 4 0 0 0 15 19 A 4 4 0 0 0 19 15 A 4 4 0 0 0 15 11 z">
+                      </path>
+                    </svg></span></div>
+              </a>
+
+              <a href="##">
+                <div class="box box2"> <span class="icon"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"
+                      class="svg">
+                      <path
+                        d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z">
+                      </path>
+                    </svg></span></div>
+              </a>
+
+              <a href="###">
+                <div class="box box3"><span class="icon"><svg viewBox="0 0 640 512" xmlns="http://www.w3.org/2000/svg"
+                      class="svg">
+                      <path
+                        d="M524.531,69.836a1.5,1.5,0,0,0-.764-.7A485.065,485.065,0,0,0,404.081,32.03a1.816,1.816,0,0,0-1.923.91,337.461,337.461,0,0,0-14.9,30.6,447.848,447.848,0,0,0-134.426,0,309.541,309.541,0,0,0-15.135-30.6,1.89,1.89,0,0,0-1.924-.91A483.689,483.689,0,0,0,116.085,69.137a1.712,1.712,0,0,0-.788.676C39.068,183.651,18.186,294.69,28.43,404.354a2.016,2.016,0,0,0,.765,1.375A487.666,487.666,0,0,0,176.02,479.918a1.9,1.9,0,0,0,2.063-.676A348.2,348.2,0,0,0,208.12,430.4a1.86,1.86,0,0,0-1.019-2.588,321.173,321.173,0,0,1-45.868-21.853,1.885,1.885,0,0,1-.185-3.126c3.082-2.309,6.166-4.711,9.109-7.137a1.819,1.819,0,0,1,1.9-.256c96.229,43.917,200.41,43.917,295.5,0a1.812,1.812,0,0,1,1.924.233c2.944,2.426,6.027,4.851,9.132,7.16a1.884,1.884,0,0,1-.162,3.126,301.407,301.407,0,0,1-45.89,21.83,1.875,1.875,0,0,0-1,2.611,391.055,391.055,0,0,0,30.014,48.815,1.864,1.864,0,0,0,2.063.7A486.048,486.048,0,0,0,610.7,405.729a1.882,1.882,0,0,0,.765-1.352C623.729,277.594,590.933,167.465,524.531,69.836ZM222.491,337.58c-28.972,0-52.844-26.587-52.844-59.239S193.056,219.1,222.491,219.1c29.665,0,53.306,26.82,52.843,59.239C275.334,310.993,251.924,337.58,222.491,337.58Zm195.38,0c-28.971,0-52.843-26.587-52.843-59.239S388.437,219.1,417.871,219.1c29.667,0,53.307,26.82,52.844,59.239C470.715,310.993,447.538,337.58,417.871,337.58Z">
+                      </path>
+                    </svg></span></div>
+              </a>
+
+              <div class="box box4"></div>
+            </div>
+          </div>
+
+          <!-- Resources -->
+          <div class="footer-resources">
+            <h4 class="text-white font-bold text-lg mb-6">Resources</h4>
+            <ul class="space-y-4">
+              <li><a href="#" class="text-slate-500 hover:text-white">About Us</a></li>
+              <li><a href="{{ url_for('rpaper') }}" class="text-slate-500 hover:text-white">Research</a></li>
+              <!-- <li><a href="#" class="text-slate-500 hover:text-white">Case Studies</a></li> -->
+              <li><a href="{{ url_for('help') }}" class="text-slate-500 hover:text-white">Help</a></li>
+            </ul>
+          </div>
+
+        </div>
+
+
+        <!-- Bottom bar -->
+        <div class="mt-20 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <p class="text-slate-600 text-sm"> 2026 TruboCompute. All rights reserved.</p>
+          <div class="flex items-center gap-8">
+            <a  class="text-slate-600 hover:text-slate-400 text-sm transition-colors cursor-pointer">Indus
+              University, Ahmedabad</a>
+            <a href="#" class="text-slate-600 hover:text-slate-400 text-sm transition-colors cursor-pointer"></a>
+            <a href="#" class="text-slate-600 hover:text-slate-400 text-sm transition-colors cursor-pointer"></a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </section>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Initialize Lenis smooth scroll
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      touchMultiplier: 2,
+    });
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // Connect Lenis to GSAP ScrollTrigger
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+    gsap.ticker.lagSmoothing(0);
+
+    // Register ScrollTrigger
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Custom Cursor with enhanced effects
+    const cursorRing = document.getElementById('cursorRing');
+    const cursorDot = document.getElementById('cursorDot');
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+
+    if (!isTouch && cursorRing && cursorDot) {
+      let mouseX = 0, mouseY = 0;
+      let ringX = 0, ringY = 0;
+      let dotX = 0, dotY = 0;
+
+      document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      }, { passive: true });
+
+      function animateCursor() {
+        ringX += (mouseX - ringX) * 0.12;
+        ringY += (mouseY - ringY) * 0.12;
+        cursorRing.style.left = ringX + 'px';
+        cursorRing.style.top = ringY + 'px';
+
+        dotX += (mouseX - dotX) * 0.5;
+        dotY += (mouseY - dotY) * 0.5;
+        cursorDot.style.left = dotX + 'px';
+        cursorDot.style.top = dotY + 'px';
+
+        requestAnimationFrame(animateCursor);
+      }
+      animateCursor();
+
+      // Enhanced hover effect on interactive elements
+      const interactiveElements = document.querySelectorAll('a, button, .cursor-pointer');
+      interactiveElements.forEach((el) => {
+        el.addEventListener('mouseenter', () => {
+          gsap.to(cursorRing, { scale: 2, borderColor: 'rgba(6, 182, 212, 0.8)', duration: 0.2 });
+          gsap.to(cursorDot, { scale: 0.5, duration: 0.2 });
+        });
+        el.addEventListener('mouseleave', () => {
+          gsap.to(cursorRing, { scale: 1, borderColor: 'rgba(139, 92, 246, 0.6)', duration: 0.2 });
+          gsap.to(cursorDot, { scale: 1, duration: 0.2 });
+        });
+      });
+    }
+
+    gsap.set("#navLogo", {
+      scale: 1.25,
+      transformOrigin: "left center"
+    });
+
+    // Staggered Menu functionality
+    const staggeredMenuBtn = document.getElementById('staggeredMenuBtn');
+    const staggeredMenu = document.getElementById('staggeredMenu');
+    const menuBackdrop = document.getElementById('menuBackdrop');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const mobileLinks = document.querySelectorAll('.mobile-link');
+    let isMenuOpen = false;
+
+    function openDesktopMenu() {
+      isMenuOpen = true;
+      staggeredMenuBtn.classList.add('active');
+      
+      // Show backdrop
+      menuBackdrop.classList.remove('opacity-0', 'invisible');
+      menuBackdrop.classList.add('opacity-100', 'visible');
+      
+      // Show menu panel
+      staggeredMenu.classList.remove('opacity-0', 'invisible');
+      staggeredMenu.classList.add('opacity-100', 'visible');
+      staggeredMenu.style.width = '400px';
+      
+      // Animate nav links with stagger
+      navLinks.forEach((link, index) => {
+        setTimeout(() => {
+          link.classList.add('visible');
+        }, 200 + (index * 100));
+      });
+    }
+
+    function closeDesktopMenu() {
+      isMenuOpen = false;
+      staggeredMenuBtn.classList.remove('active');
+      navLinks.forEach(link => link.classList.remove('visible'));
+      
+      // Hide backdrop
+      menuBackdrop.classList.add('opacity-0', 'invisible');
+      menuBackdrop.classList.remove('opacity-100', 'visible');
+      
+      // Hide menu panel
+      setTimeout(() => {
+        staggeredMenu.classList.add('opacity-0', 'invisible');
+        staggeredMenu.classList.remove('opacity-100', 'visible');
+        staggeredMenu.style.width = '0';
+      }, 300);
+    }
+
+    function openMobileMenu() {
+      isMenuOpen = true;
+      staggeredMenuBtn.classList.add('active');
+      mobileMenu.classList.remove('opacity-0', 'invisible');
+      mobileMenu.classList.add('opacity-100', 'visible');
+      menuBackdrop.classList.remove('opacity-0', 'invisible');
+      menuBackdrop.classList.add('opacity-100', 'visible');
+    }
+
+    function closeMobileMenu() {
+      isMenuOpen = false;
+      staggeredMenuBtn.classList.remove('active');
+      mobileMenu.classList.add('opacity-0', 'invisible');
+      mobileMenu.classList.remove('opacity-100', 'visible');
+      menuBackdrop.classList.add('opacity-0', 'invisible');
+      menuBackdrop.classList.remove('opacity-100', 'visible');
+    }
+
+    staggeredMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isMobile = window.innerWidth < 768;
+      
+      if (isMenuOpen) {
+        if (isMobile) {
+          closeMobileMenu();
+        } else {
+          closeDesktopMenu();
+        }
+      } else {
+        if (isMobile) {
+          openMobileMenu();
+        } else {
+          openDesktopMenu();
+        }
+      }
+    });
+
+    // Close menu when clicking on backdrop
+    menuBackdrop.addEventListener('click', () => {
+      if (isMenuOpen) {
+        if (window.innerWidth < 768) {
+          closeMobileMenu();
+        } else {
+          closeDesktopMenu();
+        }
+      }
+    });
+
+    // Close menu when clicking on a link
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        closeDesktopMenu();
+      });
+    });
+
+    mobileLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        closeMobileMenu();
+      });
+    });
+
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isMenuOpen) {
+        if (window.innerWidth < 768) {
+          closeMobileMenu();
+        } else {
+          closeDesktopMenu();
+        }
+      }
+    });
+
+    // Navigation scroll effect
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 100) {
+        navbar.classList.add('bg-slate-900/90', 'backdrop-blur-xl', 'border-b', 'border-white/5');
+        navbar.classList.remove('bg-transparent');
+      } else {
+        navbar.classList.remove('bg-slate-900/90', 'backdrop-blur-xl', 'border-b', 'border-white/5');
+        navbar.classList.add('bg-transparent');
+      }
+    }, { passive: true });
+
+    // Generate particles for hero
+    const particlesContainer = document.getElementById('particlesContainer');
+    for (let i = 0; i < 30; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'absolute w-1.5 h-1.5 rounded-full animate-pulse-glow';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 3 + 's';
+      particle.style.opacity = Math.random() * 0.6 + 0.2;
+      particle.style.background = Math.random() > 0.5 ? '#8b5cf6' : '#06b6d4';
+      particle.style.boxShadow = `0 0 10px ${particle.style.background}`;
+      particlesContainer.appendChild(particle);
+    }
+
+    // Hero animations
+    const heroTl = gsap.timeline({ delay: 0.3 });
+    heroTl
+      .fromTo('#heroBg', { scale: 1.3, opacity: 0 }, { scale: 1.1, opacity: 1, duration: 2, ease: 'power3.out' })
+      .fromTo('#heroBgLayer2', { scale: 1.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 2.2, ease: 'power3.out' }, 0.2)
+      .fromTo('.hero-badge', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, 0.4)
+      .fromTo('.hero-headline', { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: 'power3.out' }, 0.5)
+      .fromTo('.hero-subheadline', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: 'power3.out' }, 0.7)
+      .fromTo('.hero-buttons > *', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: 'power3.out' }, 0.9)
+      .fromTo('#scrollIndicator', { opacity: 0 }, { opacity: 1, duration: 0.8 }, 1.3);
+
+    // Hero scroll parallax
+    gsap.to('#heroBg', {
+      y: '20%',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 1,
+      },
+    });
+
+    gsap.to('#heroBgLayer2', {
+      y: '30%',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 1,
+      },
+    });
+
+    gsap.to('#heroContent', {
+      y: '-15%',
+      opacity: 0,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 1,
+      },
+    });
+
+    // Hero cursor depth effect
+    if (!isTouch) {
+      const heroBg = document.getElementById('heroBg');
+      const heroBgLayer2 = document.getElementById('heroBgLayer2');
+      const heroContent = document.getElementById('heroContent');
+
+      document.getElementById('hero').addEventListener('mousemove', (e) => {
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        const moveX = (e.clientX - centerX) / centerX;
+        const moveY = (e.clientY - centerY) / centerY;
+
+        gsap.to(heroBg, { x: moveX * -20, y: moveY * -15, duration: 0.6, ease: 'power2.out' });
+        gsap.to(heroBgLayer2, { x: moveX * -35, y: moveY * -20, duration: 0.6, ease: 'power2.out' });
+        gsap.to(heroContent, { x: moveX * 10, y: moveY * 8, duration: 0.6, ease: 'power2.out' });
+      }, { passive: true });
+    }
+
+    // Story section animations
+    gsap.to('#storyBg', {
+      y: '-25%',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#story',
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 1,
+      },
+    });
+
+    gsap.fromTo('.story-header > *',
+      { y: 50, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1,
+        stagger: 0.1,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: '.story-header',
+          start: 'top 80%',
+          toggleActions: 'play none none reverse',
+        },
+      }
+    );
+
+    document.querySelectorAll('.story-block').forEach((block, index) => {
+      const direction = index % 2 === 0 ? -100 : 100;
+      gsap.fromTo(block,
+        { x: direction, opacity: 0 },
+        {
+          x: 0,
+          opacity: 1,
+          duration: 1.2,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: block,
+            start: 'top 80%',
+            toggleActions: 'play none none reverse',
+          },
+        }
+      );
+    });
+
+    // Features section animations
+    gsap.to('#featuresBg', {
+      y: '-20%',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#features',
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 1,
+      },
+    });
+
+    gsap.fromTo('.features-header > *',
+      { y: 50, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1,
+        stagger: 0.1,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: '.features-header',
+          start: 'top 80%',
+          toggleActions: 'play none none reverse',
+        },
+      }
+    );
+
+    document.querySelectorAll('.feature-card').forEach((card, index) => {
+      gsap.fromTo(card,
+        { y: 80, opacity: 0, rotateX: 20 },
+        {
+          y: 0,
+          opacity: 1,
+          rotateX: 0,
+          duration: 1,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 85%',
+            toggleActions: 'play none none reverse',
+          },
+          delay: index * 0.12,
+        }
+      );
+    });
+
+    // Visual highlight section animations
+    gsap.fromTo('#visualBg',
+      { y: '15%' },
+      {
+        y: '-25%',
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '#visual',
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: 1,
+        },
+      }
+    );
+
+    gsap.fromTo('.visual-content > *',
+      { y: 60, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1.2,
+        stagger: 0.12,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: '.visual-content',
+          start: 'top 75%',
+          toggleActions: 'play none none reverse',
+        },
+      }
+    );
+
+    gsap.fromTo('#visualSphere',
+      { scale: 0.7, opacity: 0 },
+      {
+        scale: 1,
+        opacity: 1,
+        duration: 1.5,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: '#visualSphere',
+          start: 'top 80%',
+          toggleActions: 'play none none reverse',
+        },
+      }
+    );
+
+    // Floating animation for visual sphere
+    gsap.to('#visualSphere', {
+      y: -25,
+      duration: 5,
+      repeat: -1,
+      yoyo: true,
+      ease: 'power1.inOut',
+    });
+
+    // Metrics section animations
+    gsap.fromTo('.metrics-header > *',
+      { y: 50, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1,
+        stagger: 0.1,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: '.metrics-header',
+          start: 'top 80%',
+          toggleActions: 'play none none reverse',
+        },
+      }
+    );
+
+    document.querySelectorAll('.metric-card').forEach((card, index) => {
+      gsap.fromTo(card,
+        { y: 100, opacity: 0, rotateY: index % 2 === 0 ? -20 : 20 },
+        {
+          y: 0,
+          opacity: 1,
+          rotateY: 0,
+          duration: 1.2,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 85%',
+            toggleActions: 'play none none reverse',
+          },
+          delay: index * 0.12,
+        }
+      );
+    });
+
+    // Closing section animations
+    gsap.fromTo('.closing-content > *',
+      { y: 70, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1.2,
+        stagger: 0.12,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: '.closing-content',
+          start: 'top 75%',
+          toggleActions: 'play none none reverse',
+        },
+      }
+    );
+
+
+
+    // Email form submission
+    const emailForm = document.getElementById('emailForm');
+    const emailInput = document.getElementById('emailInput');
+    const btnText = document.getElementById('btnText');
+    const btnIcon = document.getElementById('btnIcon');
+
+    emailForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (emailInput.value) {
+        btnText.textContent = 'Welcome Aboard!';
+        btnIcon.style.display = 'none';
+        emailInput.value = '';
+        setTimeout(() => {
+          btnText.textContent = 'Get Early Access';
+          btnIcon.style.display = 'block';
+        }, 4000);
+      }
+    });
+
+    // Refresh ScrollTrigger on load
+    ScrollTrigger.refresh();
+  </script>
+</body>
+
+</html>

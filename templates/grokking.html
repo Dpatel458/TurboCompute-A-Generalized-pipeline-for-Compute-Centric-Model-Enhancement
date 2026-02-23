@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>{% block title %}Grokking & Neural Pruning Research | NeuralPrune{% endblock %}</title>
+
+  <!-- ================= TAILWIND ================= -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- ================= GOOGLE FONT ================= -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- ================= MATHJAX FOR LATEX EQUATIONS ================= -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        packages: {'[+]': ['ams']}
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <!-- ================= GLOBAL CSS ================= -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cursor.css') }}">
+
+  <!-- ================= TAILWIND CONFIG ================= -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              900: '#0a0f1c',
+            },
+            violet: {
+              500: '#8b5cf6',
+            },
+            cyan: {
+              500: '#06b6d4',
+            },
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' },
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 5px rgba(139, 92, 246, 0.5)' },
+              '100%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.8), 0 0 40px rgba(139, 92, 246, 0.4)' },
+            }
+          }
+        },
+      },
+    };
+  </script>
+
+  <!-- ================= GLOBAL STYLES ================= -->
+  <style>
+    body {
+      background: #0a0f1c;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.35;
+      animation: float 8s ease-in-out infinite;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.6), transparent);
+      top: -10%;
+      left: -10%;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.6), transparent);
+      bottom: -5%;
+      right: -5%;
+      animation-delay: 2s;
+    }
+
+    .orb-3 {
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.5), transparent);
+      top: 50%;
+      left: 50%;
+      animation-delay: 4s;
+    }
+
+    /* Glassmorphism Base Style */
+    .glass {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Enhanced Glass Card */
+    .glass-card {
+      background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 16px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-card:hover {
+      border-color: rgba(139, 92, 246, 0.4);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
+      transform: translateY(-4px);
+    }
+
+    /* Section Separator */
+    .section-separator {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(139, 92, 246, 0.5) 50%, transparent 100%);
+      margin: 4rem 0;
+    }
+
+    /* Gradient Text */
+    .gradient-text {
+      background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Glow Effects */
+    .glow-violet {
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .glow-cyan {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+
+    /* Image Hover Zoom */
+    .img-zoom-container {
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    .img-zoom {
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .img-zoom-container:hover .img-zoom {
+      transform: scale(1.08);
+    }
+
+    /* Gallery Grid */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Timeline Styles */
+    .timeline-item {
+      position: relative;
+      padding-left: 2rem;
+      border-left: 2px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #8b5cf6;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+    }
+
+    /* Pipeline Step */
+    .pipeline-step {
+      position: relative;
+    }
+
+    .pipeline-step::after {
+      content: '→';
+      position: absolute;
+      right: -2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #8b5cf6;
+      font-size: 1.5rem;
+    }
+
+    .pipeline-step:last-child::after {
+      display: none;
+    }
+
+    /* Reference Card */
+    .reference-card {
+      border-left: 3px solid #8b5cf6;
+      background: rgba(17, 24, 39, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .reference-card:hover {
+      background: rgba(139, 92, 246, 0.1);
+      border-left-color: #06b6d4;
+    }
+
+    /* Equation Box */
+    .equation-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    /* Icon Badge */
+    .icon-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    /* Phase Indicator */
+    .phase-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .phase-memorization {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .phase-plateau {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .phase-grokking {
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    /* Responsive Pipeline */
+    @media (max-width: 768px) {
+      .pipeline-step::after {
+        content: '↓';
+        right: 50%;
+        top: 100%;
+        transform: translateX(50%);
+      }
+    }
+
+    /* MathJax Custom Styling */
+    mjx-container {
+      font-size: 1.1em !important;
+    }
+
+    /* Smooth Scroll Padding for Fixed Header */
+    html {
+      scroll-padding-top: 80px;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0a0f1c;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #8b5cf6 0%, #06b6d4 100%);
+      border-radius: 4px;
+    }
+  </style>
+
+  <!-- ================= PAGE-SPECIFIC CSS ================= -->
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+  <div id="canvas-container"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- ================= NAVBAR ================= -->
+  {% include "components/navbar.html" %}
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="min-h-screen">
+    {% block content %}
+    
+    <!-- ============================================ -->
+    <!-- SECTION 1: HERO / TITLE SECTION -->
+    <!-- ============================================ -->
+    <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <!-- Background Gradient Orbs -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-violet-500/5 rounded-full blur-3xl"></div>
+      </div>
+
+      <!-- Neural Network Grid Background -->
+      <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, rgba(139, 92, 246, 0.3) 1px, transparent 0); background-size: 40px 40px;"></div>
+
+      <div class="relative z-10 container mx-auto px-6 py-20">
+        <div class="max-w-5xl mx-auto text-center">
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8">
+            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+            <span class="text-sm text-gray-300">Research Idea</span>
+          </div>
+
+          <!-- Main Title -->
+          <h1 class="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            <span class="gradient-text">Understanding Grokking</span>
+            <br />
+            <span class="text-white">in Deep Learning</span>
+          </h1>
+
+          <!-- Subtitle -->
+          <p class="text-xl md:text-2xl text-gray-400 mb-8 max-w-3xl mx-auto">
+            How Sparse Masking and Pruning Influence Delayed Generalization
+          </p>
+
+          <!-- Intro Paragraph -->
+          <div class="glass-card p-8 max-w-3xl mx-auto mb-12">
+            <p class="text-gray-300 leading-relaxed">
+              Grokking is a fascinating phenomenon where neural networks suddenly transition from memorizing 
+              training data to achieving perfect generalization,often long after overfitting has occurred. 
+              This research explores how model pruning and gradient masking can accelerate this transition, 
+              revealing fundamental insights about efficient learning in deep neural networks.
+            </p>
+          </div>
+
+          <!-- Banner Image -->
+          <div class="glass-card max-w-4xl mx-auto glow-violet">
+            <img 
+              src="{{ url_for('static', filename='assets/images/grokking_2.jpg') }}" 
+              alt="Neural Network Training and Generalization Visualization"
+              class="img-zoom w-full h-auto rounded-xl"
+              onerror="this.src='https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=1200&q=80'; this.alt='Neural Network Abstract'"
+            />
+          </div>
+
+          <!-- Scroll Indicator -->
+          <div class="mt-16 animate-bounce">
+            <a href="#what-is-grokking" class="text-gray-500 hover:text-violet-400 transition-colors">
+              <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- SECTION 2: WHAT IS GROKKING? -->
+    <!-- ============================================ -->
+    <section id="what-is-grokking" class="py-20 relative">
+      <div class="container mx-auto px-6">
+        <!-- Section Header -->
+        <div class="flex items-center gap-4 mb-12">
+          <div class="icon-badge">
+            <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+            </svg>
+          </div>
+          <h2 class="text-4xl font-bold text-white">What is Grokking?</h2>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-12 items-start">
+          <!-- Content Column -->
+          <div class="space-y-6">
+            <!-- Definition Card -->
+            <div class="glass-card p-6">
+              <h3 class="text-xl font-semibold text-violet-400 mb-3">Definition</h3>
+              <p class="text-gray-300 leading-relaxed">
+                <strong class="text-white">Grokking</strong> is a phenomenon where a neural network, after initially 
+                overfitting to its training data, suddenly transitions to perfect generalization on unseen test data 
+                during continued training often hundreds or thousands of epochs after training accuracy has plateaued 
+                at 100%.
+              </p>
+            </div>
+
+            <!-- Origin Card -->
+            <div class="glass-card p-6">
+              <h3 class="text-xl font-semibold text-cyan-400 mb-3">Origin of the Term</h3>
+              <p class="text-gray-300 leading-relaxed">
+                The term "grok" comes from Robert A. Heinlein's 1961 science fiction novel <em>Stranger in a Strange Land</em>, 
+                where it means to understand something so thoroughly that it becomes part of you. In deep learning, 
+                it was coined by <strong>Power et al. (2022)</strong> at OpenAI to describe this sudden comprehension phenomenon.
+              </p>
+            </div>
+
+            <!-- Why It Surprised Researchers -->
+            <div class="glass-card p-6">
+              <h3 class="text-xl font-semibold text-pink-400 mb-3">Why It Surprised Researchers</h3>
+              <p class="text-gray-300 leading-relaxed">
+                Traditional machine learning theory suggests that overfitting is harmful and irreversible. Grokking 
+                challenges this by showing that networks can "unlearn" their memorization and discover the true 
+                underlying pattern, suggesting that overfitting might be a temporary phase rather than a permanent failure.
+              </p>
+            </div>
+
+            <!-- Memorization vs Generalization -->
+            <div class="glass-card p-6">
+              <h3 class="text-xl font-semibold text-green-400 mb-3">Memorization vs. Generalization Gap</h3>
+              <p class="text-gray-300 leading-relaxed mb-4">
+                The core observation is the dramatic divergence between training and test performance:
+              </p>
+              <ul class="space-y-2 text-gray-300">
+                <li class="flex items-start gap-2">
+                  <span class="text-red-400 mt-1">●</span>
+                  <span><strong>Memorization:</strong> Network achieves near-perfect training accuracy by storing training examples</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-yellow-400 mt-1">●</span>
+                  <span><strong>Gap:</strong> Test accuracy remains near random chance for many epochs</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-green-400 mt-1">●</span>
+                  <span><strong>Generalization:</strong> Sudden transition to perfect test accuracy</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Visual Column -->
+          <div class="space-y-6 flex flex-col items-center pt-[200px] pl-[80px]">
+            <!-- Training vs Testing Accuracy Graph -->
+            <!-- <div class="glass-card p-6">
+              <h4 class="text-lg font-semibold text-white mb-4 text-center">Training vs. Testing Accuracy</h4>
+              <div class="img-zoom-container">
+                <img 
+                  src="{{ url_for('static', filename='images/grokking-accuracy-curve.png') }}" 
+                  alt="Grokking Training and Testing Accuracy Curve"
+                  class="img-zoom w-full h-auto rounded-lg"
+                  onerror="this.src='https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'; this.alt='Data Visualization'"
+                />
+              </div>
+              <p class="text-sm text-gray-400 mt-4 text-center">
+                Typical grokking curve showing the sharp transition from memorization to generalization
+              </p>
+            </div> -->
+
+            <!-- Phase Transition Visualization -->
+            <div class="glass-card p-6 w-full max-w-xl">
+              <h4 class="text-lg font-semibold text-white mb-4 text-center">Phase Transition Visualization</h4>
+              <div class="img-zoom-container">
+                <img 
+                  src="{{ url_for('static', filename='assets/images/phases.png') }}" 
+                  alt="Phase Transition in Neural Network Training"
+                  class="img-zoom w-full h-auto rounded-lg"
+                  
+                />
+              </div>
+              <p class="text-sm text-gray-400 mt-4 text-center">
+                Visualization of the three distinct phases during grokking
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-separator container mx-auto px-6"></div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 3: MATHEMATICAL & THEORETICAL FOUNDATIONS -->
+    <!-- ============================================ -->
+    <section id="mathematical-foundations" class="py-20 relative">
+      <div class="container mx-auto px-6">
+        <!-- Section Header -->
+        <div class="flex items-center gap-4 mb-12">
+          <div class="icon-badge">
+            <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h2 class="text-4xl font-bold text-white">Mathematical & Theoretical Foundations</h2>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+          <!-- Cross-Entropy Loss -->
+          <div class="glass-card p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <span class="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold">1</span>
+              <h3 class="text-xl font-semibold text-white">Cross-Entropy Loss</h3>
+            </div>
+            <div class="equation-box mb-6">
+              $$L = -\sum_{i} y_i \log(\hat{y}_i)$$
+            </div>
+            <p class="text-gray-400 text-sm leading-relaxed">
+              Measures the difference between the true distribution <span class="text-violet-400">$y$</span> and 
+              the predicted distribution <span class="text-cyan-400">$\hat{y}$</span>. Minimizing this loss 
+              drives the network to produce probability distributions that match the ground truth labels.
+            </p>
+          </div>
+
+          <!-- Generalization Gap -->
+          <div class="glass-card p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <span class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold">2</span>
+              <h3 class="text-xl font-semibold text-white">Generalization Gap</h3>
+            </div>
+            <div class="equation-box mb-6">
+              $$\text{GenGap} = \mathcal{L}_{\text{train}} - \mathcal{L}_{\text{test}}$$
+            </div>
+            <p class="text-gray-400 text-sm leading-relaxed">
+              Quantifies the difference between training and test performance. A large positive gap indicates 
+              overfitting. In grokking, this gap initially grows, then suddenly collapses to near zero as 
+              generalization occurs.
+            </p>
+          </div>
+
+          <!-- Weight Decay Regularization -->
+          <div class="glass-card p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <span class="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-400 font-bold">3</span>
+              <h3 class="text-xl font-semibold text-white">Weight Decay (L2)</h3>
+            </div>
+            <div class="equation-box mb-6">
+              $$L_{\text{total}} = L_{\text{data}} + \lambda \|W\|^2_2$$
+            </div>
+            <p class="text-gray-400 text-sm leading-relaxed">
+              Adds a penalty proportional to the squared magnitude of weights. This regularization is 
+              <strong>crucial for grokking</strong>—it prevents the network from memorizing by keeping 
+              weights small, forcing the discovery of simpler, more generalizable solutions.
+            </p>
+          </div>
+        </div>
+
+        <!-- Additional Theory -->
+        <div class="mt-12 glass-card p-8">
+          <h3 class="text-2xl font-semibold text-white mb-6">Key Theoretical Insights</h3>
+          <div class="grid md:grid-cols-2 gap-8">
+            <div>
+              <h4 class="text-lg font-semibold text-violet-400 mb-3">Implicit Regularization</h4>
+              <p class="text-gray-300 leading-relaxed">
+                Gradient descent implicitly prefers solutions with smaller weight norms. This bias toward 
+                simplicity is what eventually drives the network away from complex memorization solutions 
+                toward simpler generalizing solutions.
+              </p>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-cyan-400 mb-3">Loss Landscape Structure</h4>
+              <p class="text-gray-300 leading-relaxed">
+                The loss landscape contains many local minima corresponding to memorization solutions, 
+                but the global minimum (or better minima) corresponding to the true underlying pattern 
+                has a larger basin of attraction when regularization is strong.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-separator container mx-auto px-6"></div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 4: GROKKING TRAINING DYNAMICS -->
+    <!-- ============================================ -->
+    <section id="training-dynamics" class="py-20 relative">
+      <div class="container mx-auto px-6">
+        <!-- Section Header -->
+        <div class="flex items-center gap-4 mb-12">
+          <div class="icon-badge">
+            <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h2 class="text-4xl font-bold text-white">Grokking Training Dynamics</h2>
+        </div>
+
+        <!-- Timeline Diagram -->
+        <div class="glass-card p-8 mb-12 max-w-3xl mx-auto">
+          <div class="mb-6">
+            <img 
+              src="{{ url_for('static', filename='assets/images/grooking.png') }}" 
+              alt="Grokking Training Timeline"
+              class="img-zoom w-full h-auto rounded-lg"
+              onerror="this.src='https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=1200&q=80'; this.alt='Timeline Visualization'"
+            />
+          </div>
+          <p class="text-center text-gray-400">Complete training trajectory showing all three phases of grokking</p>
+        </div>
+
+        <!-- Three Phases -->
+        <div class="grid md:grid-cols-3 gap-8">
+          <!-- Phase 1: Memorization -->
+          <div class="glass-card p-8 border-t-4 border-red-500">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl font-bold text-white">Phase 1</h3>
+              <span class="phase-indicator phase-memorization">
+                <span class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+                Confusion
+              </span>
+            </div>
+            <h4 class="text-lg font-semibold text-red-400 mb-4">Unstable Learning Dynamics</h4>
+            <ul class="space-y-3 text-gray-300 text-sm">
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Network struggles to find meaningful patterns</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Training accuracy fluctuates at low–moderate levels</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Predictions appear noisy and inconsistent</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Model behaves close to random guessing</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Phase 2: Overfitting Plateau -->
+          <div class="glass-card p-8 border-t-4 border-yellow-500">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl font-bold text-white">Phase 2</h3>
+              <span class="phase-indicator phase-plateau">
+                <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+                Memorization
+              </span>
+            </div>
+            <h4 class="text-lg font-semibold text-yellow-400 mb-4">The Overfitting Plateau</h4>
+            <ul class="space-y-3 text-gray-300 text-sm">
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Training accuracy stays at ~100%</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Model memorizes individual training examples</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Test accuracy shows little or slow improvement</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Weights grow large to store dataset specifics</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Phase 3: Sudden Generalization -->
+          <div class="glass-card p-8 border-t-4 border-green-500">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl font-bold text-white">Phase 3</h3>
+              <span class="phase-indicator phase-grokking">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                Grokking
+              </span>
+            </div>
+            <h4 class="text-lg font-semibold text-green-400 mb-4">Sudden Generalization</h4>
+            <ul class="space-y-3 text-gray-300 text-sm">
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Test accuracy suddenly jumps to near 100%</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Network discovers the "true" underlying algorithm</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Weight norms stabilize at smaller values</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Transition often occurs within ~100 steps</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-separator container mx-auto px-6"></div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 5: CONNECTION TO OUR PROJECT (MASKING & PRUNING) -->
+    <!-- ============================================ -->
+    <section id="project-connection" class="py-20 relative">
+      <!-- Highlight Background -->
+      <div class="absolute inset-0 bg-gradient-to-b from-violet-500/5 via-transparent to-cyan-500/5 pointer-events-none"></div>
+
+      <div class="container mx-auto px-6 relative z-10">
+        <!-- Section Header -->
+        <div class="flex items-center gap-4 mb-4">
+          <div class="icon-badge">
+            <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+            </svg>
+          </div>
+          <h2 class="text-4xl font-bold text-white">Connection to Our Project</h2>
+        </div>
+        <p class="text-xl text-violet-400 mb-12 ml-16">Masking & Pruning</p>
+
+        <!-- Core Concepts Grid -->
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+          <!-- Model Pruning -->
+          <div class="glass-card p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"></path>
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold text-white">What is Model Pruning?</h3>
+            </div>
+            <p class="text-gray-300 leading-relaxed mb-4">
+              <strong class="text-violet-400">Model pruning</strong> is the process of systematically removing 
+              weights (setting them to zero) from a neural network to create a sparse model. The goal is to 
+              reduce model size and computational cost while maintaining accuracy.
+            </p>
+            <div class="bg-black/30 rounded-lg p-4">
+              <p class="text-sm text-gray-400">
+                <strong class="text-white">Magnitude Pruning:</strong> Remove weights with smallest importance scored values. 
+                These contribute least to the network's output.
+              </p>
+            </div>
+          </div>
+
+          <!-- Gradient Masking -->
+          <div class="glass-card p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold text-white">What is Gradient Masking?</h3>
+            </div>
+            <p class="text-gray-300 leading-relaxed mb-4">
+              <strong class="text-cyan-400">Gradient masking</strong> involves applying a binary mask during 
+              backpropagation to prevent gradient updates to certain weights. This effectively "freezes" 
+              pruned weights at zero while allowing the remaining weights to learn.
+            </p>
+            <div class="bg-black/30 rounded-lg p-4">
+              <p class="text-sm text-gray-400">
+                <strong class="text-white">Masked Update:</strong> $W_{t+1} = W_t - \eta \cdot (M \odot \nabla L)$ 
+                where $M$ is the binary mask.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lottery Ticket Hypothesis -->
+        <div class="glass-card p-8 mb-12">
+          <div class="flex items-start gap-6">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0 border border-violet-500/30">
+              <svg class="w-8 h-8 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-2xl font-bold text-white mb-3">The Lottery Ticket Hypothesis</h3>
+              <p class="text-gray-300 leading-relaxed mb-4">
+                Proposed by <strong class="text-violet-400">Frankle & Carbin (2019)</strong>, the Lottery Ticket 
+                Hypothesis states that dense, randomly-initialized neural networks contain smaller subnetworks 
+                ("winning tickets") that, when trained in isolation, can match the test accuracy of the original 
+                network in at most the same number of training iterations.
+              </p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-black/30 rounded-lg p-4 border-l-2 border-violet-500">
+                  <h4 class="font-semibold text-violet-400 mb-2">Key Insight</h4>
+                  <p class="text-sm text-gray-400">
+                    Not all weights are equally important. A small subset carries the essential structure for learning.
+                  </p>
+                </div>
+                <div class="bg-black/30 rounded-lg p-4 border-l-2 border-cyan-500">
+                  <h4 class="font-semibold text-cyan-400 mb-2">Implication for Grokking</h4>
+                  <p class="text-sm text-gray-400">
+                    Sparse subnetworks may have less capacity for memorization, forcing earlier generalization.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hypothesis Statement -->
+        <div class="glass-card p-8 mb-12 border-2 border-violet-500/30 glow-violet">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="px-3 py-1 rounded-full bg-violet-500/20 text-violet-400 text-sm font-semibold">HYPOTHESIS</span>
+          </div>
+          <blockquote class="text-xl md:text-2xl text-white leading-relaxed italic border-l-4 border-violet-500 pl-6">
+            "Pruned or masked networks may grok <span class="text-violet-400">faster</span> than dense networks 
+            because sparsity reduces memorization capacity and enforces <span class="text-cyan-400">structured learning</span>."
+          </blockquote>
+          <div class="mt-6 flex items-center gap-4">
+            <div class="h-px flex-1 bg-gradient-to-r from-violet-500/50 to-transparent"></div>
+            <span class="text-gray-500 text-sm">Our Research Hypothesis</span>
+          </div>
+        </div>
+
+        <!-- Visual Comparisons -->
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- Dense vs Pruned Curves -->
+          <div class="glass-card p-6">
+            <h4 class="text-lg font-semibold text-white mb-4 text-center">Base vs. Pruned Training Curves</h4>
+            <div class="img-zoom-container">
+              <img 
+                src="{{ url_for('static', filename='assets/images/maskprune.png') }}" 
+                alt="Dense vs Pruned Network Training Comparison"
+                class="img-zoom w-full h-auto rounded-lg"
+                onerror="this.src='https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'; this.alt='Training Comparison'"
+              />
+            </div>
+            <p class="text-sm text-gray-400 mt-4 text-center">
+              Comparison showing faster generalization in pruned networks
+            </p>
+          </div>
+
+          <!-- Sparsity Visualization -->
+          <div class="glass-card p-6 ">
+            <h4 class="text-lg font-semibold text-white mb-4 text-center pt-[55px]">Sparsity Pattern Visualization</h4>
+            <div class="img-zoom-container " >
+              <img 
+                src="{{ url_for('static', filename='assets/images/sparse.jpg') }}" 
+                alt="Neural Network Sparsity Pattern"
+                class="img-zoom w-full h-auto rounded-lg"
+                onerror="this.src='https://images.unsplash.com/photo-1639322537228-f710d846310a?w=800&q=80'; this.alt='Sparsity Pattern'" 
+              />
+            </div>
+            <p class="text-sm text-gray-400 mt-4 text-center">
+              Visual representation of weight matrix sparsity after pruning
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-separator container mx-auto px-6"></div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 6: GRADIENT DESCENT & LOSS LANDSCAPE -->
+    <!-- ============================================ -->
+    <section id="loss-landscape" class="py-20 relative">
+      <div class="container mx-auto px-6">
+        <!-- Section Header -->
+        <div class="flex items-center gap-4 mb-12">
+          <div class="icon-badge">
+            <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+            </svg>
+          </div>
+          <h2 class="text-4xl font-bold text-white">Gradient Descent & Loss Landscape</h2>
+        </div>
+
+        <!-- Concepts Grid -->
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+          <!-- Optimization Trajectory -->
+          <div class="glass-card p-6">
+            <h3 class="text-xl font-semibold text-violet-400 mb-4">Optimization Trajectory</h3>
+            <p class="text-gray-300 text-sm leading-relaxed mb-4">
+              Gradient descent navigates the high-dimensional loss landscape by following the direction 
+              of steepest descent. The path taken depends on initialization, learning rate, and architecture.
+            </p>
+            <div class="bg-black/30 rounded-lg p-3">
+              <p class="text-xs text-gray-400">
+                <strong class="text-white">Update Rule:</strong> $\theta_{t+1} = \theta_t - \eta \nabla_\theta L$
+              </p>
+            </div>
+          </div>
+
+          <!-- Flat vs Sharp Minima -->
+          <div class="glass-card p-6">
+            <h3 class="text-xl font-semibold text-cyan-400 mb-4">Flat vs. Sharp Minima</h3>
+            <p class="text-gray-300 text-sm leading-relaxed mb-4">
+              <strong class="text-green-400">Flat minima</strong> generalize better because small perturbations 
+              to weights don't drastically change the loss. <strong class="text-red-400">Sharp minima</strong> 
+              correspond to memorization and poor generalization.
+            </p>
+            <div class="flex items-center gap-4 mt-4">
+              <div class="flex-1 h-2 rounded-full bg-gradient-to-r from-green-500 to-green-500/30"></div>
+              <span class="text-xs text-green-400">Flat</span>
+            </div>
+            <div class="flex items-center gap-4 mt-2">
+              <div class="flex-1 h-2 rounded-full bg-gradient-to-r from-red-500 to-red-500/30"></div>
+              <span class="text-xs text-red-400">Sharp</span>
+            </div>
+          </div>
+
+          <!-- Effect of Pruning -->
+          <div class="glass-card p-6">
+            <h3 class="text-xl font-semibold text-pink-400 mb-4">Effect of Pruning on Curvature</h3>
+            <p class="text-gray-300 text-sm leading-relaxed mb-4">
+              Pruning constrains the optimization to a lower-dimensional subspace. This can:
+            </p>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                <span>Reduce the number of local minima</span>
+              </li>
+              <li class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                <span>Guide optimization toward flatter regions</span>
+              </li>
+              <li class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                <span>Accelerate convergence to generalizing solutions</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Visualizations -->
+        <div class="grid md:grid-cols-2 gap-8 pl-[55px]">
+          <!-- 3D Loss Landscape -->
+          <div class="glass-card p-6  max-w-[650px] max-h-[700px]">
+            <h4 class="text-lg font-semibold text-white mb-4 text-center">3D Loss Landscape (Base Model)</h4>
+            <div class="flex justify-center">
+              <img 
+                src="{{ url_for('static', filename='assets/images/contour1.png') }}" 
+                alt="3D Loss Landscape Visualization"
+                class="img-zoom w-auto h-auto rounded-lg"
+                onerror="this.src='https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=800&q=80'; this.alt='3D Landscape'"
+              />
+            </div>
+            <p class="text-sm text-gray-400 mt-4 text-center">
+              Visualization of the high-dimensional loss surface with multiple minima
+            </p>
+          </div>
+
+          <!-- Contour Gradient Path -->
+          <div class="glass-card p-6 max-w-[650px] max-h-[700px] ">
+            <h4 class="text-lg font-semibold text-white mb-4 text-center">3D Loss Landscape (Optimized Model)</h4>
+            <div class="flex justify-center">
+              <img 
+                src="{{ url_for('static', filename='assets/images/contour2.png') }}" 
+                alt="Gradient Descent Contour Path"
+                class="img-zoom w-auto h-auto rounded-lg"
+                onerror="this.src='https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&q=80'; this.alt='Contour Plot'"
+              />
+            </div>
+            <p class="text-sm text-gray-400 mt-4 text-center">
+              Contour plot showing optimization trajectory toward the global minimum
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-separator container mx-auto px-6"></div>
+    
+
+    <!-- ============================================ -->
+    <!-- SECTION 8: RESEARCH PAPERS & REFERENCES -->
+    <!-- ============================================ -->
+    <section id="references" class="py-20 relative">
+      <div class="container mx-auto px-6">
+        <!-- Section Header -->
+        <div class="flex items-center gap-4 mb-12">
+          <div class="icon-badge">
+            <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+          </div>
+          <h2 class="text-4xl font-bold text-white">Research Papers & References</h2>
+        </div>
+
+        <!-- References Grid -->
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Paper 1: Grokking -->
+          <div class="reference-card glass-card p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                <span class="text-violet-400 font-bold">1</span>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-white mb-2">
+                  Grokking: Generalization Beyond Overfitting on Small Algorithmic Datasets
+                </h3>
+                <p class="text-sm text-gray-400 mb-3">
+                  <strong class="text-violet-400">Authors:</strong> Alethea Power, Yuri Burda, Harri Edwards, 
+                  Igor Babuschkin, Vedant Misra
+                </p>
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                  <span class="px-2 py-1 rounded bg-violet-500/10 text-violet-400">2022</span>
+                  <span class="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400">arXiv</span>
+                  <a href="https://arxiv.org/abs/2201.02177" target="_blank" 
+                     class="px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">
+                    arXiv:2201.02177
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paper 2: Lottery Ticket -->
+          <div class="reference-card glass-card p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                <span class="text-cyan-400 font-bold">2</span>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-white mb-2">
+                  The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks
+                </h3>
+                <p class="text-sm text-gray-400 mb-3">
+                  <strong class="text-cyan-400">Authors:</strong> Jonathan Frankle, Michael Carbin
+                </p>
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                  <span class="px-2 py-1 rounded bg-violet-500/10 text-violet-400">2019</span>
+                  <span class="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400">ICLR</span>
+                  <a href="https://arxiv.org/abs/1803.03635" target="_blank" 
+                     class="px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">
+                    arXiv:1803.03635
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paper 3: Double Descent -->
+          <div class="reference-card glass-card p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                <span class="text-pink-400 font-bold">3</span>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-white mb-2">
+                  Reconciling Modern Machine-Learning Practice and the Classical Bias–Variance Trade-Off
+                </h3>
+                <p class="text-sm text-gray-400 mb-3">
+                  <strong class="text-pink-400">Authors:</strong> Mikhail Belkin, Daniel Hsu, Siyuan Ma, 
+                  Soumik Mandal
+                </p>
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                  <span class="px-2 py-1 rounded bg-violet-500/10 text-violet-400">2019</span>
+                  <span class="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400">PNAS</span>
+                  <a href="https://arxiv.org/abs/1812.11118" target="_blank" 
+                     class="px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">
+                    arXiv:1812.11118
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paper 4: Implicit Bias -->
+          <div class="reference-card glass-card p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                <span class="text-green-400 font-bold">4</span>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-white mb-2">
+                  The Implicit Bias of Gradient Descent on Separable Data
+                </h3>
+                <p class="text-sm text-gray-400 mb-3">
+                  <strong class="text-green-400">Authors:</strong> Daniel Soudry, Elad Hoffer, 
+                  Mor Shpigel Nacson, Suriya Gunasekar, Nathan Srebro
+                </p>
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                  <span class="px-2 py-1 rounded bg-violet-500/10 text-violet-400">2018</span>
+                  <span class="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400">JMLR</span>
+                  <a href="https://arxiv.org/abs/1710.10345" target="_blank" 
+                     class="px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">
+                    arXiv:1710.10345
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Resources -->
+        
+        </div>
+      </div>
+    </section>
+
+    <div class="section-separator container mx-auto px-6"></div>
+
+    
+
+
+    <!-- ============================================ -->
+    <!-- SECTION 10: CONCLUSION -->
+    <!-- ============================================ -->
+    <section id="conclusion" class="py-20 relative">
+      <!-- Background Glow -->
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute bottom-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-0 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div class="container mx-auto px-6 relative z-10">
+        <!-- Section Header -->
+        <div class="flex items-center gap-4 mb-12">
+          <div class="icon-badge">
+            <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h2 class="text-4xl font-bold text-white">Conclusion</h2>
+        </div>
+
+        <!-- Conclusion Cards -->
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+          <!-- What Grokking Reveals -->
+          <div class="glass-card p-8 border-t-4 border-violet-500">
+            <div class="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-6">
+              <svg class="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-4">What Grokking Reveals</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Grokking demonstrates that neural networks can discover underlying algorithmic structure 
+              even after prolonged overfitting. It challenges the traditional view that overfitting is 
+              irreversible and suggests that generalization is a learnable property that emerges from 
+              the interplay of optimization and regularization.
+            </p>
+          </div>
+
+          <!-- Pruning/Masking Influence -->
+          <div class="glass-card p-8 border-t-4 border-cyan-500">
+            <div class="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center mb-6">
+              <svg class="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-4">How Pruning/Masking Influences It</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Our research suggests that pruning and gradient masking can accelerate grokking by reducing 
+              the network's capacity for memorization. Sparse networks are forced to learn more efficient 
+              representations, potentially discovering the underlying algorithm faster than their dense 
+              counterparts.
+            </p>
+          </div>
+
+          <!-- Why It Matters -->
+          <div class="glass-card p-8 border-t-4 border-green-500">
+            <div class="w-14 h-14 rounded-2xl bg-green-500/20 flex items-center justify-center mb-6">
+              <svg class="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-4">Why This Matters</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Understanding grokking and its relationship to sparsity has profound implications for 
+              efficient deep learning. It suggests that we can train smaller, faster models without 
+              sacrificing generalization—paving the way for more sustainable and deployable AI systems 
+              that require less computation and energy.
+            </p>
+          </div>
+        </div>
+
+        <!-- Final Quote -->
+       
+
+        <!-- CTA -->
+       
+      </div>
+    </section>
+
+    {% endblock %}
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  {% include "components/footer.html" %}
+
+  <!-- ================= CURSOR ================= -->
+  {% include "components/cursor.html" %}
+
+  <!-- ================= GLOBAL JS ================= -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="{{ url_for('static', filename='js/cursor.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <!-- ================= PAGE-SPECIFIC JS ================= -->
+  {% block extra_js %}
+  <script>
+    function initThreeBackground() {
+      const container = document.getElementById('canvas-container');
+      if (!container || typeof THREE === 'undefined') return;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particlesCount = 180;
+      const posArray = new Float32Array(particlesCount * 3);
+
+      for (let i = 0; i < particlesCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 24;
+      }
+
+      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.08,
+        color: 0x8b5cf6,
+        transparent: true,
+        opacity: 0.55,
+      });
+
+      const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+      scene.add(particlesMesh);
+
+      camera.position.z = 12;
+
+      const animate = () => {
+        particlesMesh.rotation.y += 0.0007;
+        particlesMesh.rotation.x += 0.0003;
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      };
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    initThreeBackground();
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Intersection Observer for scroll animations
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in');
+        }
+      });
+    }, observerOptions);
+
+    // Observe all glass cards
+    document.querySelectorAll('.glass-card').forEach(card => {
+      observer.observe(card);
+    });
+
+    // Add animation class styles
+    const style = document.createElement('style');
+    style.textContent = `
+      .glass-card {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+      }
+      .glass-card.animate-in {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+  {% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!-- ================= GLOBAL NAVBAR ================= -->
+<nav id="navbar"
+  class="fixed top-0 left-0 right-0 z-60 transition-all duration-500 bg-transparent">
+
+  <div class="w-full px-8 lg:px-10">
+    <div class="flex items-center justify-between h-16 lg:h-20">
+
+      <!-- Logo -->
+      <a href="{{ url_for('home') }}" id="navLogo" class="flex items-center gap-3 -ml-6 origin-left">
+        <div class="relative w-44 h-44 lg:w-52 lg:h-52">
+          <img
+            src="{{ url_for('static', filename='assets/images/logo.png') }}"
+            alt="NeuralPrune Logo"
+            class="w-full h-full object-contain"
+          />
+        </div>
+      </a>
+
+    </div>
+  </div>
+</nav>
+
+<!-- ================= STAGGERED MENU (OUTSIDE NAV) ================= -->
+<div id="smWrapper"
+  class="fixed top-0 right-0 h-screen w-[380px] z-50">
+
+
+  <!-- Toggle Button -->
+  <button id="smToggle"
+    class="pointer-events-auto fixed top-6 right-8 z-[80]
+           flex items-center gap-2 text-slate-200 font-medium">
+
+    <span class="overflow-hidden h-5">
+      <span id="smToggleInner"
+        class="block transition-transform duration-300">Menu</span>
+    </span>
+
+    <span class="relative w-4 h-4">
+      <span class="absolute inset-x-0 top-1/2 h-[2px] bg-current"></span>
+      <span id="smPlus"
+        class="absolute inset-y-0 left-1/2 w-[2px] bg-current transition-transform"></span>
+    </span>
+  </button>
+
+  <!-- Color Layers -->
+  <div id="smLayers" class="absolute inset-0">
+    <div class="sm-layer bg-violet-600"></div>
+    <div class="sm-layer bg-cyan-500"></div>
+  </div>
+
+  <!-- Menu Panel -->
+<aside id="smPanel"
+  class="absolute inset-0 text-white px-10 pt-32 pointer-events-auto">
+
+
+    <ul class="space-y-5 text-3xl font-extrabold uppercase">
+      <li><a href="{{ url_for('home') }}" class="sm-item">Home</a></li>
+      <li><a href="{{ url_for('upload') }}" class="sm-item">Upload</a></li>
+      <li><a href="{{ url_for('grokking') }}" class="sm-item">Grokking</a></li>
+      <li><a href="{{ url_for('architecture') }}" class="sm-item">Architecture</a></li>
+      <li><a href="{{ url_for('test') }}" class="sm-item">Test</a></li>
+      <li><a href="{{ url_for('credit') }}" class="sm-item">About Us</a></li>
+      <li><a href="{{ url_for('rpaper') }}" class="sm-item">Research</a></li>
+      <li><a href="{{ url_for('help') }}" class="sm-item">Help</a></li>
+    </ul>
+  </aside>
+
+</div>

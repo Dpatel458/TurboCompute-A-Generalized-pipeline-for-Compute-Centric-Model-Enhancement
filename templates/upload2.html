@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Model | NeuralPrune</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cursor.css') }}">
+
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                },
+            },
+        };
+    </script>
+
+    <style>
+        body {
+            background-color: #0a0f1c;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* =========================================================
+   UIVERSE FILE UPLOAD – THEME MODIFIED
+   Original by Ma7moud344 (uiverse.io)
+   Adapted for NeuralPrune (violet / cyan / dark)
+   ========================================================= */
+
+        .uiverse-upload-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+
+        .uiverse-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 32px;
+            background: linear-gradient(135deg,
+                    rgba(139, 92, 246, 0.18),
+                    rgba(6, 182, 212, 0.18));
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(14px);
+        }
+
+        /* Floating folder */
+        .folder {
+            position: relative;
+            animation: float 3s infinite ease-in-out;
+            transition: transform 0.3s ease;
+        }
+
+        .folder:hover {
+            transform: scale(1.06);
+        }
+
+        /* Folder top */
+        .folder .top {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            width: 90px;
+            height: 22px;
+            border-radius: 14px 14px 0 0;
+            box-shadow: 0 6px 18px rgba(139, 92, 246, 0.6);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Folder bottom */
+        .folder .bottom {
+            background: linear-gradient(135deg, #06b6d4, #22d3ee);
+            width: 140px;
+            height: 90px;
+            box-shadow: 0 18px 35px rgba(6, 182, 212, 0.45);
+            border-radius: 0 14px 14px 14px;
+            position: relative;
+            top: -10px;
+        }
+
+        /* Upload button */
+        .custom-file-upload {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e5e7eb;
+            text-align: center;
+            margin-top: 22px;
+            padding: 14px 28px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .custom-file-upload:hover {
+            background: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Hide native input */
+        .custom-file-upload input[type="file"] {
+            display: none;
+        }
+
+        /* Hint text */
+        .upload-hint {
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        /* Float animation */
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-18px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        /* =========================================================
+   UIVERSE RADIO SELECTOR – 6 MODELS (TWO COLUMN)
+   ========================================================= */
+
+        .model-type-layout {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            align-items: start;
+            gap: 20px;
+        }
+
+        .model-type-label {
+            padding-top: 12px;
+        }
+
+        /* Wrapper */
+        .model-type-wrapper {
+            display: flex;
+        }
+
+        /* Radio container */
+        .radio-container {
+            --main-color: #8b5cf6;
+            --main-color-opacity: rgba(139, 92, 246, 0.18);
+
+            --total-radio: 6;
+
+            display: grid;
+            grid-template-columns: repeat(2, (160px, 1 fr));
+            column-gap: 0;
+            row-gap: 6px;
+
+            position: relative;
+            padding-left: 0px;
+        }
+
+        /* Hide native input */
+        .radio-container input {
+            appearance: none;
+            cursor: pointer;
+        }
+
+        /* Vertical spine */
+        .radio-container .glider-container {
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg,
+                    transparent 0%,
+                    rgba(139, 92, 246, 0.6) 50%,
+                    transparent 100%);
+        }
+
+        /* Moving glider */
+        .radio-container .glider-container .glider {
+            position: relative;
+            height: calc(100% / var(--total-radio));
+            width: 100%;
+            background: linear-gradient(180deg,
+                    transparent 0%,
+                    #06b6d4 50%,
+                    transparent 100%);
+            transition: transform 0.45s cubic-bezier(0.37, 1.95, 0.66, 0.56);
+        }
+
+        /* Glow */
+        .radio-container .glider-container .glider::before {
+            content: "";
+            position: absolute;
+            height: 60%;
+            width: 320%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #8b5cf6;
+            filter: blur(14px);
+            opacity: 0.85;
+        }
+
+        /* Horizontal glow */
+        .radio-container .glider-container .glider::after {
+            content: "";
+            position: absolute;
+            left: 0px;
+            height: 100%;
+            width: 200px;
+            background: linear-gradient(90deg,
+                    var(--main-color-opacity) 0%,
+                    rgba(0, 0, 0, 0) 100%);
+        }
+
+        /* Labels */
+        .radio-container label {
+            cursor: pointer;
+            padding: 0.85rem 2rem;
+            font-weight: 600;
+            color: #94a3b8;
+            transition: all 0.3s ease;
+        }
+
+        .radio-container label:hover {
+            color: #e5e7eb;
+        }
+
+        /* Active label */
+        .radio-container input:checked+label {
+            color: #22d3ee;
+            text-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+        }
+
+        /* Glider positions (6 items) */
+        .radio-container input:nth-of-type(1):checked~.glider-container .glider {
+            transform: translateY(0%);
+        }
+
+        .radio-container input:nth-of-type(2):checked~.glider-container .glider {
+            transform: translateY(100%);
+        }
+
+        .radio-container input:nth-of-type(3):checked~.glider-container .glider {
+            transform: translateY(200%);
+        }
+
+        .radio-container input:nth-of-type(4):checked~.glider-container .glider {
+            transform: translateY(300%);
+        }
+
+        .radio-container input:nth-of-type(5):checked~.glider-container .glider {
+            transform: translateY(400%);
+        }
+
+        .radio-container input:nth-of-type(6):checked~.glider-container .glider {
+            transform: translateY(500%);
+        }
+
+        /* =========================================================
+   UIVERSE STAR BUTTON – NEURALPRUNE THEME
+   Original by Uiverse.io
+   Modified: Violet / Cyan / Dark Glass
+   ========================================================= */
+
+        .np-star-btn {
+            position: relative;
+            padding: 14px 44px;
+            font-size: 17px;
+            font-weight: 700;
+            color: #e5e7eb;
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow:
+                0 0 25px rgba(139, 92, 246, 0.45),
+                inset 0 0 20px rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.35s ease;
+        }
+
+        .np-star-btn:hover {
+            background: transparent;
+            color: #22d3ee;
+            box-shadow:
+                0 0 45px rgba(34, 211, 238, 0.55),
+                inset 0 0 30px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Shared star style */
+        .np-star {
+            position: absolute;
+            width: 16px;
+            filter: drop-shadow(0 0 0 rgba(34, 211, 238, 0));
+            z-index: -5;
+            transition: all 0.9s cubic-bezier(0.05, 0.83, 0.43, 0.96);
+        }
+
+        /* Initial positions */
+        .star-1 {
+            top: 30%;
+            left: 30%;
+        }
+
+        .star-2 {
+            top: 45%;
+            left: 45%;
+            width: 12px;
+        }
+
+        .star-3 {
+            top: 40%;
+            left: 40%;
+            width: 6px;
+        }
+
+        .star-4 {
+            top: 25%;
+            left: 50%;
+            width: 9px;
+        }
+
+        .star-5 {
+            top: 30%;
+            left: 55%;
+            width: 14px;
+        }
+
+        .star-6 {
+            top: 10%;
+            left: 60%;
+            width: 6px;
+        }
+
+        /* Hover animation */
+        .np-star-btn:hover .star-1 {
+            top: -80%;
+            left: -30%;
+            filter: drop-shadow(0 0 12px #22d3ee);
+            z-index: 2;
+        }
+
+        .np-star-btn:hover .star-2 {
+            top: -20%;
+            left: 10%;
+            filter: drop-shadow(0 0 10px #8b5cf6);
+            z-index: 2;
+        }
+
+        .np-star-btn:hover .star-3 {
+            top: 55%;
+            left: 25%;
+            filter: drop-shadow(0 0 10px #22d3ee);
+            z-index: 2;
+        }
+
+        .np-star-btn:hover .star-4 {
+            top: 30%;
+            left: 85%;
+            filter: drop-shadow(0 0 10px #8b5cf6);
+            z-index: 2;
+        }
+
+        .np-star-btn:hover .star-5 {
+            top: 25%;
+            left: 120%;
+            filter: drop-shadow(0 0 12px #22d3ee);
+            z-index: 2;
+        }
+
+        .np-star-btn:hover .star-6 {
+            top: 5%;
+            left: 65%;
+            filter: drop-shadow(0 0 10px #8b5cf6);
+            z-index: 2;
+        }
+
+        /* Star fill */
+        .np-star svg path {
+            fill: #e0f2fe;
+        }
+
+        /* =========================================================
+   PAGE BACKGROUND IMAGE – UPLOAD PAGE
+========================================================= */
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("{{ url_for('static', filename='assets/images/upload-bg.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+
+            /* Dark cinematic overlay */
+            filter: brightness(0.35) saturate(1.1);
+
+            z-index: -2;
+        }
+
+        /* Optional grain / depth overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at top,
+                    rgba(139, 92, 246, 0.12),
+                    rgba(6, 182, 212, 0.06),
+                    rgba(10, 15, 28, 0.85));
+            z-index: -1;
+        }
+
+
+
+
+
+        /* ================= VERTICAL KEEP RATIO SLIDER ================= */
+        /* ================= VERTICAL KEEP RATIO SLIDER ================= */
+        /* ================= KEEP RATIO SLIDER (FIXED) ================= */
+
+        .np-slider-rail {
+            position: relative;
+            width: 18px;
+            height: 240px;
+            background: rgba(139, 92, 246, 0.18);
+            border-radius: 999px;
+            overflow: hidden;
+            /* 🔑 THIS FIXES THE PURPLE BLOCK */
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Actual range */
+        .np-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 240px;
+            height: 18px;
+            transform: rotate(-90deg);
+            background: transparent;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            cursor: pointer;
+        }
+
+        /* Track */
+        .np-slider::-webkit-slider-runnable-track {
+            height: 24px;
+            background: transparent;
+        }
+
+        /* Filled part */
+        .np-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            box-shadow: -200px 0 0 200px #8b5cf6;
+        }
+
+        /* Firefox */
+        .np-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            box-shadow: -200px 0 0 200px #8b5cf6;
+        }
+
+        /* ===== MODEL UPLOAD FEEDBACK ===== */
+        .uiverse-container.model-selected {
+            border: 1px solid rgba(34, 211, 238, 0.6);
+            box-shadow:
+                0 0 30px rgba(34, 211, 238, 0.5),
+                0 0 60px rgba(139, 92, 246, 0.35);
+        }
+
+        .upload-hint.selected {
+            color: #22d3ee;
+            font-weight: 600;
+        }
+
+        /* ================= NEURALPRUNE FULLSCREEN LOADER ================= */
+/* ===== Loader overlay ===== */
+.np-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(10, 15, 28, 0.75);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  transition: opacity 0.4s ease;
+}
+
+.np-loader-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ===== Loader wrapper (base typography & subtle global glow) ===== */
+.loader-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 1.6em;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+
+  color: #e5e7eb;
+  scale: 1.8;
+
+  /* Soft ambient glow so text never feels “dead” */
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.15);
+}
+
+/* ===== Animated scanning layer (visual interest only) ===== */
+.loader {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+
+  /* Creates vertical scanning stripes */
+  mask: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 6px,
+    black 7px,
+    black 8px
+  );
+}
+
+.loader::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  /* Color accents for scan sweep */
+  background-image:
+    radial-gradient(circle at 50% 50%, #22d3ee 0%, transparent 50%),
+    radial-gradient(circle at 45% 45%, #8b5cf6 0%, transparent 45%),
+    radial-gradient(circle at 55% 55%, #06b6d4 0%, transparent 45%);
+
+  /* Focuses scan light into a soft center band */
+  mask: radial-gradient(
+    circle at 50% 50%,
+    transparent 0%,
+    transparent 10%,
+    black 25%
+  );
+
+  animation:
+    transform-animation 2s infinite alternate,
+    opacity-animation 4s infinite;
+}
+
+/* ===== Letter animation with long-lasting glow ===== */
+.loader-letter {
+  display: inline-block;
+  opacity: 0;
+  z-index: 2;
+
+  /* Slower animation so glow has time to breathe */
+  animation: loader-letter-anim 4.5s infinite ease-in-out;
+
+  /* Base glow — visible even when letter is fading */
+  color: #ffffff;
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.5),
+    0 0 12px rgba(34, 211, 238, 0.45),
+    0 0 24px rgba(34, 211, 238, 0.35);
+}
+
+/* ===== Staggered letter delays ===== */
+.loader-letter:nth-child(1)  { animation-delay: 0.1s; }
+.loader-letter:nth-child(2)  { animation-delay: 0.2s; }
+.loader-letter:nth-child(3)  { animation-delay: 0.3s; }
+.loader-letter:nth-child(4)  { animation-delay: 0.4s; }
+.loader-letter:nth-child(5)  { animation-delay: 0.5s; }
+.loader-letter:nth-child(6)  { animation-delay: 0.6s; }
+.loader-letter:nth-child(7)  { animation-delay: 0.7s; }
+.loader-letter:nth-child(8)  { animation-delay: 0.8s; }
+.loader-letter:nth-child(9)  { animation-delay: 0.9s; }
+.loader-letter:nth-child(10) { animation-delay: 1.0s; }
+
+/* ===== Scan animations ===== */
+@keyframes transform-animation {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(50%); }
+}
+
+@keyframes opacity-animation {
+  0%, 100% { opacity: 0; }
+  20%      { opacity: 1; }
+  70%      { opacity: 0; }
+}
+
+/* ===== Letter glow animation =====
+   - Glow peaks early
+   - Holds brightness longer
+   - Fades slowly for premium feel
+*/
+@keyframes loader-letter-anim {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+    text-shadow: none;
+  }
+
+  12% {
+    opacity: 1;
+    transform: scale(1.12) translateY(-2px);
+
+    /* Peak glow */
+    text-shadow:
+      0 0 8px rgba(255, 255, 255, 0.7),
+      0 0 18px rgba(34, 211, 238, 0.7),
+      0 0 36px rgba(34, 211, 238, 0.6);
+  }
+
+  /* Hold glow longer (key improvement) */
+  65% {
+    opacity: 0.6;
+    text-shadow:
+      0 0 6px rgba(255, 255, 255, 0.5),
+      0 0 14px rgba(34, 211, 238, 0.5),
+      0 0 28px rgba(34, 211, 238, 0.4);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1);
+    text-shadow:
+      0 0 4px rgba(255, 255, 255, 0.2),
+      0 0 8px rgba(34, 211, 238, 0.2);
+  }
+}
+    </style>
+</head>
+
+<body>
+
+    {% include "components/navbar.html" %}
+
+    <!-- ================= MAIN ================= -->
+    <main class="pt-40 pb-24 px-6 lg:px-8">
+
+
+        <div class="max-w-5xl mx-auto">
+
+            <!-- Header -->
+            <div class="text-center mb-16">
+                <span
+                    class="inline-block px-4 py-1.5 bg-violet-500/20 text-violet-300 text-xs font-bold rounded-full mb-6">
+                    Step 1
+                </span>
+                <h1 class="text-4xl sm:text-5xl font-black mb-6">
+                    Upload Your <span class="text-violet-500">Neural Model</span>
+                </h1>
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                    Upload a trained neural network model and select its architecture type.
+                </p>
+            </div>
+
+
+            <!-- Upload Card -->
+            <div class="glass rounded-3xl p-10">
+                <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload') }}" class="space-y-10">
+
+                    <!-- ================= TOP GRID ================= -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start mt-10">
+
+                        <!-- KEEP RATIO -->
+                        <div class="flex flex-col items-center">
+                            <span class="text-sm font-semibold mb-4 text-center">Keep Ratio</span>
+
+                            <div class="np-slider-rail">
+                                <input type="range" min="10" max="100" value="70" name="keep_ratio" id="keepRatio"
+                                    class="np-slider" />
+                            </div>
+
+                            <span class="mt-4 text-violet-400 font-bold text-lg" id="keepRatioLabel">
+                                70%
+                            </span>
+                        </div>
+
+                        <!-- UPLOAD MODEL -->
+                        <div class="flex flex-col items-center">
+                            <span class="text-sm font-semibold mb-4 text-center">
+                                Upload Model File
+                            </span>
+
+                            <div class="uiverse-upload-wrapper">
+                                <div class="uiverse-container cursor-interactive">
+                                    <div class="folder">
+                                        <div class="top"></div>
+                                        <div class="bottom"></div>
+                                    </div>
+
+                                    <label class="custom-file-upload" id="modelUploadLabel">
+                                        <input type="file" name="model_file" accept=".h5,.keras" id="modelFileInput"
+                                            required />
+                                        <span>Choose model file</span>
+                                    </label>
+
+                                    <p class="upload-hint" id="modelFileName">
+                                        Supported formats: <b>.h5</b>, <b>.keras</b>
+                                    </p>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CHOOSE MODEL -->
+                        <div class="flex flex-col items-center">
+                            <span class="text-sm font-semibold mb-4 text-center">
+                                Choose Model
+                            </span>
+
+                            <div class="model-type-wrapper">
+                                <div class="radio-container cursor-interactive">
+
+                                    <input checked id="radio-fnn" name="model_type" type="radio" value="fnn" />
+                                    <label for="radio-fnn">FNN</label>
+
+                                    <input id="radio-cnn" name="model_type" type="radio" value="cnn" />
+                                    <label for="radio-cnn">CNN</label>
+
+                                    <input id="radio-resnet" name="model_type" type="radio" value="resnet" />
+                                    <label for="radio-resnet">ResNet</label>
+
+                                    <input id="radio-mobilenet" name="model_type" type="radio" value="mobilenet" />
+                                    <label for="radio-mobilenet">MobileNet</label>
+
+                                    <input id="radio-efficientnet" name="model_type" type="radio"
+                                        value="efficientnet" />
+                                    <label for="radio-efficientnet">EfficientNet</label>
+
+                                    <input id="radio-transformer" name="model_type" type="radio" value="transformer" />
+                                    <label for="radio-transformer">Transformer</label>
+
+                                    <div class="glider-container">
+                                        <div class="glider"></div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ================= SECOND GRID (3 PART) ================= -->
+                    <!-- ================= SECOND GRID (3 PART) ================= -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-14 items-center mt-10">
+
+                        <!-- DATASET (LEFT – SPACE PRESERVED) -->
+                        <div>
+                            <div id="dataset-upload" class="hidden">
+                                <label class="block text-sm font-semibold mb-3 text-center">
+                                    Upload Dataset (CSV)
+                                </label>
+
+                                <input
+  type="file"
+  id="datasetInput"
+  name="dataset_file"
+  accept=".csv"
+  class="block w-full text-sm text-slate-300
+         file:bg-violet-500/20
+         file:border-0
+         file:px-4
+         file:py-2
+         file:rounded-lg
+         file:text-violet-300
+         hover:file:bg-violet-500/30
+         transition"
+/>
+
+
+                                <!-- <p class="text-xs text-slate-500 mt-2 text-center">
+                                    Required for FNN pruning (activation & gradient based)
+                                </p> -->
+                            </div>
+                        </div>
+
+                        <!-- BUTTON (ALWAYS CENTERED) -->
+                        <div class="flex justify-center self-center">
+                            <button type="submit" class="np-star-btn">
+                                Mask / Prune Model
+
+                                <!-- STAR 1 -->
+                                <div class="star-1 np-star">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53">
+                                        <path d="M392.05 0c-20.9,210.08-184.06,378.41-392.05,407.78
+          207.96,29.37 371.12,197.68 392.05,407.74
+          20.93-210.06 184.09-378.37 392.05-407.74
+          -207.98-29.38-371.16-197.69-392.06-407.78z" />
+                                    </svg>
+                                </div>
+
+                                <!-- STAR 2 -->
+                                <div class="star-2 np-star">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53">
+                                        <path d="M392.05 0c-20.9,210.08-184.06,378.41-392.05,407.78
+          207.96,29.37 371.12,197.68 392.05,407.74
+          20.93-210.06 184.09-378.37 392.05-407.74
+          -207.98-29.38-371.16-197.69-392.06-407.78z" />
+                                    </svg>
+                                </div>
+
+                                <!-- STAR 3 -->
+                                <div class="star-3 np-star">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53">
+                                        <path d="M392.05 0c-20.9,210.08-184.06,378.41-392.05,407.78
+          207.96,29.37 371.12,197.68 392.05,407.74
+          20.93-210.06 184.09-378.37 392.05-407.74
+          -207.98-29.38-371.16-197.69-392.06-407.78z" />
+                                    </svg>
+                                </div>
+
+                                <!-- STAR 4 -->
+                                <div class="star-4 np-star">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53">
+                                        <path d="M392.05 0c-20.9,210.08-184.06,378.41-392.05,407.78
+          207.96,29.37 371.12,197.68 392.05,407.74
+          20.93-210.06 184.09-378.37 392.05-407.74
+          -207.98-29.38-371.16-197.69-392.06-407.78z" />
+                                    </svg>
+                                </div>
+
+                                <!-- STAR 5 -->
+                                <div class="star-5 np-star">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53">
+                                        <path d="M392.05 0c-20.9,210.08-184.06,378.41-392.05,407.78
+          207.96,29.37 371.12,197.68 392.05,407.74
+          20.93-210.06 184.09-378.37 392.05-407.74
+          -207.98-29.38-371.16-197.69-392.06-407.78z" />
+                                    </svg>
+                                </div>
+
+                                <!-- STAR 6 -->
+                                <div class="star-6 np-star">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53">
+                                        <path d="M392.05 0c-20.9,210.08-184.06,378.41-392.05,407.78
+          207.96,29.37 371.12,197.68 392.05,407.74
+          20.93-210.06 184.09-378.37 392.05-407.74
+          -207.98-29.38-371.16-197.69-392.06-407.78z" />
+                                    </svg>
+                                </div>
+
+                            </button>
+                        </div>
+
+                        <!-- EMPTY RIGHT COLUMN (BALANCE) -->
+                        <div></div>
+
+                    </div>
+
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================= FULLSCREEN LOADER OVERLAY ================= -->
+<div id="npLoaderOverlay" class="np-loader-overlay hidden">
+  <div class="loader-wrapper">
+    <span class="loader-letter">S</span>
+    <span class="loader-letter">n</span>
+    <span class="loader-letter">i</span>
+    <span class="loader-letter">p</span>
+
+    <span class="loader-letter">&nbsp;</span>
+
+    <span class="loader-letter">S</span>
+    <span class="loader-letter">n</span>
+    <span class="loader-letter">i</span>
+    <span class="loader-letter">p</span>
+
+    <span class="loader-letter">&nbsp;</span>
+    <span class="loader-letter">—</span>
+    <span class="loader-letter">&nbsp;</span>
+    
+    <span class="loader-letter">O</span>
+    <span class="loader-letter">p</span>
+    <span class="loader-letter">t</span>
+    <span class="loader-letter">i</span>
+    <span class="loader-letter">m</span>
+    <span class="loader-letter">i</span>
+    <span class="loader-letter">z</span>
+    <span class="loader-letter">i</span>
+    <span class="loader-letter">n</span>
+    <span class="loader-letter">g</span>
+
+    <span class="loader-letter">&nbsp;</span>
+    
+    <span class="loader-letter">🕸️</span>
+
+    <span class="loader-letter">✂️</span>
+
+    <div class="loader"></div>
+  </div>
+</div>
+
+    {% include "components/footer.html" %}
+
+    {% include "components/cursor.html" %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/cursor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+   <script>
+  /* ================= DATASET TOGGLE ================= */
+  const fnnRadio = document.getElementById("radio-fnn");
+  const datasetBox = document.getElementById("dataset-upload");
+  const datasetInput = document.getElementById("datasetInput");
+
+  function toggleDatasetInput() {
+    const selectedModel = document.querySelector('input[name="model_type"]:checked').value;
+
+    if (selectedModel === "fnn") {
+      datasetBox.classList.remove("hidden");
+      datasetInput.required = true;
+    } else {
+      datasetBox.classList.add("hidden");
+      datasetInput.required = false;
+      datasetInput.value = ""; // clear old file
+    }
+  }
+
+  document.querySelectorAll('input[name="model_type"]').forEach(radio => {
+    radio.addEventListener("change", toggleDatasetInput);
+  });
+
+  toggleDatasetInput();
+
+
+  /* ================= KEEP RATIO ================= */
+  const keepRatio = document.getElementById("keepRatio");
+  const keepRatioLabel = document.getElementById("keepRatioLabel");
+
+  function updateKeepRatio() {
+    keepRatioLabel.textContent = keepRatio.value + "%";
+  }
+
+  keepRatio.addEventListener("input", updateKeepRatio);
+  updateKeepRatio();
+
+
+  /* ================= MODEL UPLOAD (FIXED) ================= */
+  const modelInput = document.getElementById("modelFileInput");
+  const modelLabel = document.getElementById("modelUploadLabel");
+  const modelFileName = document.getElementById("modelFileName");
+  const uploadContainer = modelLabel.closest(".uiverse-container");
+
+  modelInput.addEventListener("change", () => {
+    if (modelInput.files.length > 0) {
+      const file = modelInput.files[0];
+
+      // Show filename
+      modelFileName.textContent = "Selected: " + file.name;
+      modelFileName.classList.add("text-cyan-300", "font-semibold");
+
+      // Visual feedback (safe)
+      uploadContainer.classList.add("ring-2", "ring-cyan-400");
+
+      // Change ONLY label text — DO NOT touch input
+      const span = modelLabel.querySelector("span");
+      if (span) {
+        span.textContent = "Model Selected";
+      }
+    }
+  });
+
+    /* ================= SHOW LOADER ON SUBMIT ================= */
+  const form = document.querySelector("form");
+  const loaderOverlay = document.getElementById("npLoaderOverlay");
+
+  form.addEventListener("submit", () => {
+    loaderOverlay.classList.remove("hidden");
+  });
+
+
+
+  
+
+</script>
+
+
+
+</body>
+
+</html>

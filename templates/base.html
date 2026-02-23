@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>{% block title %}NeuralPrune{% endblock %}</title>
+
+  <!-- ================= TAILWIND ================= -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ================= GOOGLE FONT ================= -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- ================= GLOBAL CSS ================= -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cursor.css') }}">
+
+  <!-- ================= TAILWIND CONFIG ================= -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              900: '#0a0f1c',
+            },
+            violet: {
+              500: '#8b5cf6',
+            },
+            cyan: {
+              500: '#06b6d4',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- ================= GLOBAL STYLES ================= -->
+  <style>
+    body {
+      background-color: #0a0f1c;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .glass {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+
+  <!-- ================= PAGE-SPECIFIC CSS ================= -->
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+  <!-- ================= NAVBAR ================= -->
+  {% include "components/navbar.html" %}
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="min-h-screen">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  {% include "components/footer.html" %}
+
+  <!-- ================= CURSOR ================= -->
+  {% include "components/cursor.html" %}
+
+  <!-- ================= GLOBAL JS ================= -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="{{ url_for('static', filename='js/cursor.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <!-- ================= PAGE-SPECIFIC JS ================= -->
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

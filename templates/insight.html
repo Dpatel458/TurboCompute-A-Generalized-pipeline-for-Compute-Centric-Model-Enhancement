@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model Insights | NeuralPrune</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cursor.css') }}">
+
+  <style>
+    body {
+      background-color: #0a0f1c;
+      background-image:
+        linear-gradient(rgba(10, 15, 28, 0.82), rgba(10, 15, 28, 0.82)),
+        url('/static/assets/images/bg7.png');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .section-screen {
+      height: 120vh;
+      min-height: 100vh;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+
+    /* GLASS CARD */
+    .glass {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .insight-desc-card {
+      margin-top: 1.25rem;
+      padding: 1.05rem 1.15rem;
+      border-radius: 1.1rem;
+      background:
+        radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.18), transparent 42%),
+        radial-gradient(circle at 12% 88%, rgba(34, 211, 238, 0.14), transparent 40%),
+        linear-gradient(135deg, rgba(17, 24, 39, 0.88), rgba(15, 23, 42, 0.75));
+      border: 1px solid rgba(34, 211, 238, 0.28);
+      box-shadow:
+        0 0 20px rgba(34, 211, 238, 0.14),
+        inset 0 0 26px rgba(139, 92, 246, 0.1);
+      backdrop-filter: blur(8px);
+    }
+
+    .insight-desc-title {
+      font-size: 0.79rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 800;
+      margin-bottom: 0.65rem;
+      background: linear-gradient(90deg, #22d3ee, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+    }
+
+    .insight-desc-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .insight-desc-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      color: #dbeafe;
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+
+    .insight-desc-item::before {
+      content: "";
+      width: 0.42rem;
+      height: 0.42rem;
+      border-radius: 9999px;
+      margin-top: 0.47rem;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.55);
+    }
+
+    /* ===============================
+       SVG LETTER LOADER (LOADING)
+       =============================== */
+
+    .loader {
+      --ANIMATION-DELAY-MULTIPLIER: 70ms;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      padding: 0;
+      margin: 0;
+    }
+
+    .loader span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+      letter-spacing: -5rem;
+      transform: translateY(4rem);
+      animation: hideAndSeek 1s cubic-bezier(0.86, 0, 0.07, 1) infinite alternate both;
+    }
+
+    /* Sequential animation delays (left → right) */
+    .loader span:nth-child(1) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 0);
+    }
+
+    .loader span:nth-child(2) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 1);
+    }
+
+    .loader span:nth-child(3) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 2);
+    }
+
+    .loader span:nth-child(4) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 3);
+    }
+
+    .loader span:nth-child(5) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 4);
+    }
+
+    .loader span:nth-child(6) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 5);
+    }
+
+    .loader span:nth-child(7) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 6);
+    }
+
+    .loader span:nth-child(8) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 7);
+    }
+
+    .loader span:nth-child(9) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 8);
+    }
+
+    .loader span:nth-child(10) {
+      animation-delay: calc(var(--ANIMATION-DELAY-MULTIPLIER) * 9);
+    }
+
+
+
+    .letter {
+      height: 3rem;
+      width: auto;
+      display: block;
+    }
+
+    .i {
+      margin-inline: 6px;
+    }
+
+    @keyframes hideAndSeek {
+      0% {
+        transform: translateY(4rem);
+      }
+
+      100% {
+        transform: translateY(0rem);
+      }
+    }
+
+    /* Apply theme color to outline SVG letters */
+.letter path {
+  fill: none;                 /* remove black fill */
+  stroke: currentColor;       /* inherit Tailwind text color */
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+  </style>
+</head>
+
+<body>
+
+  {% include "components/navbar.html" %}
+
+  <main class="pt-28 snap-y snap-mandatory">
+    <!-- SUMMARY -->
+    <section class="section-screen flex items-center px-8 lg:px-10">
+      <div class="max-w-4xl mx-auto glass rounded-3xl p-10 text-center -mt-80">
+        <span class="inline-block px-4 py-1.5 bg-cyan-500/20 text-cyan-300 text-xs font-bold rounded-full mb-6">
+          Model Insights
+        </span>
+        <h1 class="text-4xl sm:text-5xl font-black mb-4 uppercase">
+          {{ model_type }} <span class="text-cyan-400">Comparison</span>
+        </h1>
+        <p class="text-slate-400 text-lg mb-6">
+          {% if keep_ratio == 'retrain' %}
+          Stage: <span class="text-emerald-300 font-semibold">Retrain Comparison</span>
+          {% else %}
+          Keep Ratio: <span class="text-emerald-300 font-semibold">{{ keep_ratio }}%</span>
+          {% endif %}
+        </p>
+        <p class="text-slate-400">
+          Base model: <span class="text-slate-200">{{ base_model }}</span><br />
+          Pruned model: <span class="text-slate-200">{{ pruned_model }}</span>
+          {% if retrained_model %}
+          <br />Retrained model: <span class="text-slate-200">{{ retrained_model }}</span>
+          {% endif %}
+        </p>
+      </div>
+    </section>
+
+    <!-- GRAPH SECTIONS -->
+    <div id="insight-sections"></div>
+
+    <!-- BACK -->
+    <section class="section-screen flex items-center px-6 lg:px-8">
+      <div class="max-w-4xl mx-auto text-center">
+        <a href="#" onclick="history.back(); return false;" class="text-slate-300 hover:text-white underline">
+          ← Back to Output
+        </a>
+      </div>
+    </section>
+  </main>
+
+  {% include "components/footer.html" %}
+  {% include "components/cursor.html" %}
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="{{ url_for('static', filename='js/cursor.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <script>
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function formatDescription(description) {
+      if (!description) return "";
+      const lines = description
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+      if (!lines.length) return "";
+      const items = lines
+        .map(line => `<li class="insight-desc-item">${escapeHtml(line)}</li>`)
+        .join("");
+      return `<ul class="insight-desc-list">${items}</ul>`;
+    }
+
+    const params = new URLSearchParams({
+      base: "{{ base_model }}",
+      pruned: "{{ pruned_model }}",
+      retrained: "{{ retrained_model if retrained_model is defined else '' }}",
+      model_type: "{{ model_type }}",
+      keep_ratio: "{{ keep_ratio }}",
+      base_flops: "{{ base_flops }}",
+      pruned_flops: "{{ pruned_flops }}"
+    });
+
+    const container = document.getElementById("insight-sections");
+    const expectedGraphs = Number("{{ total_graphs }}") || 9;
+    const runId = "{{ run_id }}";
+
+    for (let i = 0; i < expectedGraphs; i++) {
+      const section = document.createElement("section");
+      section.className = "section-screen flex items-center px-6 lg:px-8";
+      section.innerHTML = `
+<div class="max-w-6xl mx-auto w-full glass rounded-3xl p-20 min-h-[420px] flex items-center justify-center">
+  <div class="loader text-cyan-400">
+
+    <!-- G -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M80 30C70 15 55 10 40 15C20 22 15 45 15 60C15 75 20 98 45 105C65 110 80 95 80 95V70H55"/>
+      </svg>
+    </span>
+
+    <!-- E -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M75 15H25V105H75M25 60H65"/>
+      </svg>
+    </span>
+
+    <!-- N -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M25 105V15L75 105V15"/>
+      </svg>
+    </span>
+
+    <!-- E -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M75 15H25V105H75M25 60H65"/>
+      </svg>
+    </span>
+
+    <!-- R -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M25 105V15H60C75 15 80 30 80 40C80 55 70 65 55 65H25M55 65L80 105"/>
+      </svg>
+    </span>
+
+    <!-- A -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M50 15L20 105M50 15L80 105M30 70H70"/>
+      </svg>
+    </span>
+
+    <!-- T -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M15 15H85M50 15V105"/>
+      </svg>
+    </span>
+
+    <!-- I -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M50 15V105"/>
+      </svg>
+    </span>
+
+    <!-- N -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M25 105V15L75 105V15"/>
+      </svg>
+    </span>
+
+    <!-- G -->
+    <span>
+      <svg viewBox="0 0 100 120" class="letter">
+        <path d="M80 30C70 15 55 10 40 15C20 22 15 45 15 60C15 75 20 98 45 105C65 110 80 95 80 95V70H55"/>
+      </svg>
+    </span>
+
+  </div>
+</div>
+`;
+
+      container.appendChild(section);
+    }
+
+    async function loadGraphs() {
+      const sections = Array.from(container.querySelectorAll("section"));
+      for (let i = 0; i < expectedGraphs; i++) {
+        try {
+          const res = await fetch("{{ insight_data_endpoint if insight_data_endpoint is defined else '/insight_data' }}?" + params.toString() + `&index=${i}&run_id=${runId}`);
+          const data = await res.json();
+          if (data.error) {
+            sections[i].innerHTML = `
+              <div class="max-w-4xl mx-auto glass rounded-3xl p-10 text-center">
+                <p class="text-rose-300 text-lg mb-2">Failed to generate insight</p>
+                <p class="text-slate-400 text-sm">${data.error}</p>
+              </div>
+            `;
+            continue;
+          }
+          sections[i].innerHTML = `
+            <div class="max-w-5xl mx-auto w-full glass rounded-3xl p-8">
+              <img src="${data.plot_url}" alt="Model insight graph"
+                   class="w-full max-h-[52vh] object-contain rounded-2xl mx-auto" />
+              ${data.description ? `
+              <div class="insight-desc-card">
+                <p class="insight-desc-title">Graph Insight</p>
+                ${formatDescription(data.description)}
+              </div>` : ``}
+            </div>
+          `;
+        } catch (e) {
+          sections[i].innerHTML = `
+            <div class="max-w-4xl mx-auto glass rounded-3xl p-10 text-center">
+              <p class="text-rose-300 text-lg mb-2">Failed to generate insight</p>
+              <p class="text-slate-400 text-sm">Please try again.</p>
+            </div>
+          `;
+        }
+      }
+    }
+
+    loadGraphs();
+  </script>
+
+</body>
+
+</html>

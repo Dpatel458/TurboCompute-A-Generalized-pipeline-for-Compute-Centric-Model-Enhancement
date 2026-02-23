@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FNN Pruning Result | NeuralPrune</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                },
+            },
+        };
+    </script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cursor.css') }}">
+
+    <style>
+        body {
+            background-color: #0a0f1c;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+
+<body>
+
+    {% include "components/navbar.html" %}
+
+    <main class="pt-40 pb-24 px-6 lg:px-8">
+        <div class="max-w-5xl mx-auto">
+
+            <!-- Header -->
+            <div class="text-center mb-16">
+                <span
+                    class="inline-block px-4 py-1.5 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-full mb-6">
+                    Pruning Completed
+                </span>
+
+                <h1 class="text-4xl sm:text-5xl font-black mb-6">
+                    FNN <span class="text-emerald-400">Pruning Results</span>
+                </h1>
+
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                    Structural pruning completed successfully using activation, gradient, and variance analysis.
+                </p>
+            </div>
+
+            <!-- ================= SUMMARY ================= -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+
+                <div class="glass rounded-2xl p-6 text-center">
+                    <p class="text-slate-400 text-sm mb-2">Original Neurons</p>
+                    <p class="text-3xl font-black text-violet-400">
+                        {{ report.baseline_neurons }}
+                    </p>
+                </div>
+
+                <div class="glass rounded-2xl p-6 text-center">
+                    <p class="text-slate-400 text-sm mb-2">Pruned Neurons</p>
+                    <p class="text-3xl font-black text-cyan-400">
+                        {{ report.pruned_neurons }}
+                    </p>
+                </div>
+
+                <div class="glass rounded-2xl p-6 text-center">
+                    <p class="text-slate-400 text-sm mb-2">Reduction</p>
+                    <p class="text-3xl font-black text-emerald-400">
+                        {{ (report.reduction * 100) | round(2) }}%
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- ================= ACTIONS ================= -->
+            <div class="glass rounded-3xl p-10">
+
+                <h2 class="text-2xl font-bold mb-8 text-center">
+                    Next Actions
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+                    <!-- Download -->
+                    <div class="text-center">
+                        <a href="{{ url_for('download', filename=pruned_model) }}"
+                            class="block px-6 py-4 rounded-xl font-bold
+                                   bg-gradient-to-r from-violet-500 to-cyan-500
+                                   hover:opacity-90 transition">
+                            Download Pruned Model
+                        </a>
+                        <p class="text-slate-400 text-sm mt-3">
+                            Optimized .h5 model
+                        </p>
+                    </div>
+
+                    <!-- Retrain (future) -->
+                    <div class="text-center opacity-60 cursor-not-allowed">
+                        <div
+                            class="block px-6 py-4 rounded-xl font-bold
+                                   bg-slate-700">
+                            Retrain Model
+                        </div>
+                        <p class="text-slate-400 text-sm mt-3">
+                            Coming soon
+                        </p>
+                    </div>
+
+                    <!-- Insights (future) -->
+                    <div class="text-center opacity-60 cursor-not-allowed">
+                        <div
+                            class="block px-6 py-4 rounded-xl font-bold
+                                   bg-slate-700">
+                            Model Insights
+                        </div>
+                        <p class="text-slate-400 text-sm mt-3">
+                            Layer-wise analysis
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Back -->
+            <div class="text-center mt-16">
+                <a href="{{ url_for('upload') }}"
+                    class="text-slate-400 hover:text-slate-200 underline">
+                    ← Prune another model
+                </a>
+            </div>
+
+        </div>
+    </main>
+
+    {% include "components/footer.html" %}
+    {% include "components/cursor.html" %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/cursor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+  const navbar = document.getElementById("navbar");
+  if (navbar) {
+    navbar.classList.add("navbar-scrolled");
+  }
+</script>
+</body>
+</html>

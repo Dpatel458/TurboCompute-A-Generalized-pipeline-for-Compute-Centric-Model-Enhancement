@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Help Center | NeuralPrune</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+
+  <!-- Global CSS (navbar/menu/cursor styles) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cursor.css') }}">
+
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <!-- Three.js for 3D background -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+          },
+          colors: {
+            neural: {
+              900: '#0a0f1c',
+              800: '#111827',
+              700: '#1f2937',
+            },
+            accent: {
+              violet: '#8b5cf6',
+              cyan: '#06b6d4',
+              pink: '#ec4899',
+              lime: '#84cc16',
+            }
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'shimmer': 'shimmer 2s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-20px)' },
+            },
+            shimmer: {
+              '0%': { backgroundPosition: '-1000px 0' },
+              '100%': { backgroundPosition: '1000px 0' },
+            }
+          }
+        },
+      },
+    };
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0f1c;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* 3D Canvas Background */
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Advanced Glassmorphism */
+    .glass-ultra {
+      background: rgba(17, 24, 39, 0.6);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-card {
+      background: linear-gradient(145deg,
+          #1e293b,
+          #0f172a);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      box-shadow:
+        0 10px 25px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(10, 15, 28, 0.5);
+      z-index: -1;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: rgba(139, 92, 246, 0.4);
+      box-shadow:
+        0 30px 60px -15px rgba(139, 92, 246, 0.3),
+        0 0 40px rgba(6, 182, 212, 0.2);
+    }
+
+    .glass-card:hover::before {
+      background: linear-gradient(
+        40deg,
+        #7c3aed,
+        #0891b2,
+        #db2777,
+        #7c3aed
+      );
+      filter: saturate(0.9) brightness(0.9);
+    }
+
+    /* 3D Interactive Workflow */
+    .workflow-container {
+      perspective: 2000px;
+      transform-style: preserve-3d;
+    }
+
+    .workflow-track {
+      position: relative;
+      transform-style: preserve-3d;
+      z-index: 1;
+    }
+
+    .workflow-line {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg,
+          rgba(139, 92, 246, 0) 0%,
+          rgba(139, 92, 246, 1) 10%,
+          rgba(6, 182, 212, 1) 50%,
+          rgba(236, 72, 153, 1) 90%,
+          rgba(236, 72, 153, 0) 100%);
+      transform: translateX(-50%);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+      z-index: -2;
+    }
+
+    .workflow-line-progress {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 4px;
+      background: linear-gradient(180deg, #8b5cf6, #06b6d4, #ec4899);
+      transform: translateX(-50%);
+      height: 0%;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+      transition: height 0.3s ease;
+      z-index: -1;
+    }
+
+    .step-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 10;
+    }
+
+    .step-3d:hover {
+      transform: rotateY(5deg) rotateX(-5deg) translateZ(30px);
+    }
+
+    .step-number {
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 4rem;
+      font-weight: 900;
+      font-family: 'Space Grotesk', sans-serif;
+      opacity: 0.3;
+      position: absolute;
+      right: 20px;
+      top: 20px;
+    }
+
+    /* Floating Orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.4;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.6), transparent);
+      top: -10%;
+      left: -10%;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.6), transparent);
+      bottom: -5%;
+      right: -5%;
+      animation-delay: 2s;
+    }
+
+    .orb-3 {
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.5), transparent);
+      top: 50%;
+      left: 50%;
+      animation-delay: 4s;
+    }
+
+    /* Interactive Cards with 3D Tilt */
+    .tilt-card {
+      transform-style: preserve-3d;
+      transform: perspective(1000px);
+    }
+
+    .tilt-content {
+      transform: translateZ(50px);
+    }
+
+    /* Neon Glow Effects */
+    .neon-text {
+      text-shadow:
+        0 0 10px rgba(139, 92, 246, 0.5),
+        0 0 20px rgba(139, 92, 246, 0.3),
+        0 0 30px rgba(139, 92, 246, 0.2);
+    }
+
+    .glow-border {
+      position: relative;
+    }
+
+    .glow-border::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, #8b5cf6, #06b6d4, #ec4899, #8b5cf6);
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s;
+      filter: blur(8px);
+    }
+
+    .glow-border:hover::before {
+      opacity: 1;
+    }
+
+    /* Magnetic Button */
+    .magnetic-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    .magnetic-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s;
+    }
+
+    .magnetic-btn:hover::before {
+      transform: translateX(100%);
+    }
+
+    .magnetic-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+    }
+
+    /* Accordion with Spring Animation */
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .accordion-content.active {
+      max-height: 500px;
+    }
+
+    .accordion-icon {
+      transition: transform 0.3s;
+    }
+
+    .accordion-icon.active {
+      transform: rotate(180deg);
+    }
+
+    /* Particle Trail */
+    .particle {
+      position: fixed;
+      width: 6px;
+      height: 6px;
+      background: radial-gradient(circle, #8b5cf6, transparent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+    }
+
+
+    /* Scroll Progress */
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #8b5cf6, #06b6d4, #ec4899);
+      z-index: 100;
+      transform-origin: left;
+      transform: scaleX(0);
+    }
+
+    /* Text Scramble Effect */
+    .scramble-text {
+      font-family: 'Space Grotesk', monospace;
+    }
+
+    /* Feature Cards Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    /* Interactive Tabs */
+    .tab-btn {
+      position: relative;
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.3s;
+      overflow: hidden;
+    }
+
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .tab-btn.active {
+      color: white;
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .tab-btn.active::after {
+      transform: scaleX(1);
+    }
+
+    .tab-content {
+      display: none;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.4s;
+    }
+
+    .tab-content.active {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Holographic Effect */
+    .holo-card {
+      background: linear-gradient(135deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          rgba(255, 255, 255, 0.05) 50%,
+          rgba(255, 255, 255, 0.1) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .holo-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg,
+          transparent 30%,
+          rgba(255, 255, 255, 0.1) 50%,
+          transparent 70%);
+      transform: rotate(45deg);
+      transition: all 0.6s;
+      opacity: 0;
+    }
+
+    .holo-card:hover::before {
+      animation: holo-shine 0.6s ease-in-out;
+    }
+
+    @keyframes holo-shine {
+      0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+        opacity: 0;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+        opacity: 0;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+
+      .workflow-line,
+      .workflow-line-progress {
+        left: 30px;
+      }
+
+      .step-number {
+        font-size: 2.5rem;
+      }
+    }
+
+    /* Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Scroll Progress Bar -->
+  <div class="scroll-progress" id="scrollProgress"></div>
+
+  <!-- 3D Background Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Floating Orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Particle Trail Container -->
+  <div id="particles"></div>
+
+  <!-- Navigation -->
+  {% include "components/navbar.html" %}
+
+  <main class="relative z-10 min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto mb-20 relative" id="hero">
+      <div class="glass-ultra rounded-3xl p-8 md:p-16 text-center relative overflow-hidden group">
+        <!-- Animated Background Grid -->
+        <div class="absolute inset-0 opacity-20">
+          <div class="absolute inset-0"
+            style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 40px 40px;">
+          </div>
+        </div>
+
+        <div class="relative z-10">
+          <div
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/20 to-cyan-500/20 border border-white/10 mb-6 animate-pulse-slow">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span class="text-xs font-bold tracking-widest uppercase text-cyan-300">Descriptive Guide</span>
+          </div>
+
+          <h1 class="text-5xl md:text-7xl font-black font-display mb-6 leading-tight">
+            <span class="block scramble-text" id="title-text">How To Use</span>
+            <span
+              class="block text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-cyan-400 to-pink-400 neon-text mt-2">TruboCompute</span>
+          </h1>
+
+          <p class="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed mb-8" id="subtitle">
+            Get to knoww our neural network optimization process through our immersive step-by-step workflow. Upload, prune,
+            analyze, and deploy with precision. Check out the  <b> <u>Pro Tips</u></b> to maximize your pruning results.
+          </p>
+
+          <!-- <div class="flex flex-wrap justify-center gap-4">
+            <button class="magnetic-btn" onclick="scrollToWorkflow()">
+              <span>Start Journey</span>
+              <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3">
+                </path>
+              </svg>
+            </button>
+            <button class="magnetic-btn" onclick="showVideoModal()">
+              <span>Watch Demo</span>
+              <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                </path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg> -->
+            </button>
+          </div>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="absolute top-10 left-10 w-20 h-20 border border-violet-500/30 rounded-full animate-pulse-slow">
+        </div>
+        <div class="absolute bottom-10 right-10 w-32 h-32 border border-cyan-500/30 rounded-full animate-pulse-slow"
+          style="animation-delay: 1s;"></div>
+      </div>
+    </section>
+
+    <!-- Interactive Tabs Section -->
+    <section class="max-w-6xl mx-auto mb-20">
+      <div class="glass-ultra rounded-2xl p-2 mb-8 flex flex-wrap justify-center gap-2">
+        <button class="tab-btn active rounded-lg" onclick="switchTab('workflow')">Workflow</button>
+        <button class="tab-btn rounded-lg" onclick="switchTab('tips')">Pro Tips</button>
+      </div>
+
+      <!-- Workflow Tab -->
+      <div id="workflow" class="tab-content active">
+        <div class="workflow-container" id="workflow-section">
+          <div class="workflow-track relative py-10">
+            <div class="workflow-line"></div>
+            <div class="workflow-line-progress" id="progressLine"></div>
+
+            <div class="space-y-12 md:space-y-24">
+              <!-- Step 1 -->
+              <div
+                class="step-3d relative flex items-center justify-center md:justify-start md:odd:flex-row-reverse group"
+                data-step="1">
+                <div class="hidden md:block w-5/12"></div>
+                <div class="absolute left-8 md:left-1/2 md:-translate-x-1/2 z-20">
+                </div>
+                <div class="w-full md:w-5/12 pl-24 md:pl-0 md:px-12">
+                  <div class="glass-card rounded-2xl p-6 md:p-8 glow-border cursor-pointer"
+                    onclick="toggleStepDetail(1)">
+                    <span class="step-number">01</span>
+                    <div class="flex items-center gap-3 mb-4">
+                      <div class="p-3 rounded-xl bg-violet-500/20 text-violet-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                          </path>
+                        </svg>
+                      </div>
+                      <h3 class="text-xl font-bold font-display">Select Model</h3>
+                    </div>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                      Upload your <span class="text-cyan-400 font-semibold">FNN</span>, <span
+                        class="text-cyan-400 font-semibold">CNN</span>,<span
+                        class="text-cyan-400 font-semibold">Transfer Learning Models</span>  or <span
+                        class="text-cyan-400 font-semibold">Transformer</span> architecture. Choose your model type.
+                    </p>
+                    <div id="detail-1" class="accordion-content">
+                      <div class="pt-4 border-t border-white/10 mt-4">
+                        <ul class="space-y-2 text-sm text-slate-400">
+                          <li class="flex items-center gap-2 text-white"><span
+                              class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>Supports TensorFlow .h5 & .keras file
+                            formats</li>
+                          <li class="flex items-center gap-2 text-white"><span
+                              class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>Auto-detects layer architecture</li>
+                          <li class="flex items-center gap-2 text-white"><span
+                              class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>Works upon Importance score
+                          </li>
+                        </ul> 
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                      <span class="text-xs text-slate-500">Click to expand</span>
+                      <svg class="w-5 h-5 text-slate-400 accordion-icon" id="icon-1" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 2 -->
+              <div
+                class="step-3d relative flex items-center justify-center md:justify-start md:odd:flex-row-reverse group"
+                data-step="2">
+                <div class="hidden md:block w-5/12"></div>
+                <div class="absolute left-8 md:left-1/2 md:-translate-x-1/2 z-20">
+                </div>
+                <div class="w-full md:w-5/12 pl-24 md:pl-0 md:px-12 md:odd:pr-0">
+                  <div class="glass-card rounded-2xl p-6 md:p-8 glow-border cursor-pointer"
+                    onclick="toggleStepDetail(2)">
+                    <span class="step-number">02</span>
+                    <div class="flex items-center gap-3 mb-4">
+                      <div class="p-3 rounded-xl bg-cyan-500/20 text-cyan-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4">
+                          </path>
+                        </svg>
+                      </div>
+                      <h3 class="text-xl font-bold font-display">Dataset + Ratio</h3>
+                    </div>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                      Add your dataset (mandatory for FNN) and set the <span
+                        class="text-pink-400 font-semibold">keep ratio</span> to control pruning aggressiveness.
+                      Real-time size estimation.
+                    </p>
+                    <div id="detail-2" class="accordion-content">
+                      <div class="pt-4 border-t border-white/10 mt-4">
+                        <div class="grid grid-cols-2 gap-3">
+                          <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                            <div class="text-2xl font-bold text-cyan-400"> < 60 </div>
+                            <div class="text-xs text-slate-400">Aggressive</div>
+                          </div>
+                          <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                            <div class="text-2xl font-bold text-violet-400"> > 80 </div>
+                            <div class="text-xs text-slate-400">Conservative</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                      <span class="text-xs text-slate-500">Click to expand</span>
+                      <svg class="w-5 h-5 text-slate-400 accordion-icon" id="icon-2" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 3 -->
+              <div
+                class="step-3d relative flex items-center justify-center md:justify-start md:odd:flex-row-reverse group"
+                data-step="3">
+                <div class="hidden md:block w-5/12"></div>
+                <div class="absolute left-8 md:left-1/2 md:-translate-x-1/2 z-20">
+
+                </div>
+                <div class="w-full md:w-5/12 pl-24 md:pl-0 md:px-12">
+                  <div class="glass-card rounded-2xl p-6 md:p-8 glow-border cursor-pointer"
+                    onclick="toggleStepDetail(3)">
+                    <span class="step-number">03</span>
+                    <div class="flex items-center gap-3 mb-4">
+                      <div class="p-3 rounded-xl bg-pink-500/20 text-pink-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z">
+                          </path>
+                        </svg>
+                      </div>
+                      <h3 class="text-xl font-bold font-display">Mask / Prune</h3>
+                    </div>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                      Algorithm based optimization creates a compact masked version. Visualize pruned connections in <span
+                        class="text-pink-400 font-semibold">topology view</span>.
+                    </p>
+                    <div id="detail-3" class="accordion-content">
+                      <div class="pt-4 border-t border-white/10 mt-4">
+                        <div class="space-y-3">
+                          <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-400 text-white">Parameters Removed</span>
+                            <span class="text-pink-400 font-mono">2.4M → 0.8M</span>
+                          </div>
+                          <div class="w-full bg-slate-800 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-pink-500 to-violet-500 h-2 rounded-full"
+                              style="width: 66%"></div>
+                          </div>
+                          <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-400 text-white">Compression Ratio</span>
+                            <span class="text-cyan-400 font-mono">3.2x</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                      <span class="text-xs text-slate-500">Click to expand</span>
+                      <svg class="w-5 h-5 text-slate-400 accordion-icon" id="icon-3" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 4 -->
+              <div
+                class="step-3d relative flex items-center justify-center md:justify-start md:odd:flex-row-reverse group"
+                data-step="4">
+                <div class="hidden md:block w-5/12"></div>
+                <div class="absolute left-8 md:left-1/2 md:-translate-x-1/2 z-20">
+
+                </div>
+                <div class="w-full md:w-5/12 pl-24 md:pl-0 md:px-12 md:odd:pr-0">
+                  <div class="glass-card rounded-2xl p-6 md:p-8 glow-border cursor-pointer"
+                    onclick="toggleStepDetail(4)">
+                    <span class="step-number">04</span>
+                    <div class="flex items-center gap-3 mb-4">
+                      <div class="p-3 rounded-xl bg-lime-500/20 text-lime-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                        </svg>
+                      </div>
+                      <h3 class="text-xl font-bold font-display">Choose Action</h3>
+                    </div>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                      Download optimized model, explore detailed insights, or proceed to retraining. <span
+                        class="text-lime-400 font-semibold">Compare metrics</span> side-by-side.
+                    </p>
+                    <div id="detail-4" class="accordion-content">
+                      <div class="pt-4 border-t border-white/10 mt-4 grid grid-cols-3 gap-2">
+                        <button
+                          class="p-2 rounded-lg bg-slate-800/50 hover:bg-violet-500/20 transition-colors text-xs text-center">
+                          <div class="text-violet-400 mb-1">⬇</div>
+                          Download
+                        </button>
+                        <button
+                          class="p-2 rounded-lg bg-slate-800/50 hover:bg-cyan-500/20 transition-colors text-xs text-center">
+                          <div class="text-cyan-400 mb-1">📊</div>
+                          Insights
+                        </button>
+                        <button
+                          class="p-2 rounded-lg bg-slate-800/50 hover:bg-pink-500/20 transition-colors text-xs text-center">
+                          <div class="text-pink-400 mb-1">🔄</div>
+                          Retrain
+                        </button>
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                      <span class="text-xs text-slate-500">Click to expand</span>
+                      <svg class="w-5 h-5 text-slate-400 accordion-icon" id="icon-4" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 5 -->
+              <div
+                class="step-3d relative flex items-center justify-center md:justify-start md:odd:flex-row-reverse group"
+                data-step="5">
+                <div class="hidden md:block w-5/12"></div>
+                <div class="absolute left-8 md:left-1/2 md:-translate-x-1/2 z-20">
+
+                </div>
+                <div class="w-full md:w-5/12 pl-24 md:pl-0 md:px-12">
+                  <div class="glass-card rounded-2xl p-6 md:p-8 glow-border cursor-pointer"
+                    onclick="toggleStepDetail(5)">
+                    <span class="step-number">05</span>
+                    <div class="flex items-center gap-3 mb-4">
+                      <div class="p-3 rounded-xl bg-orange-500/20 text-orange-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                      </div>
+                      <h3 class="text-xl font-bold font-display">Retrain</h3>
+                    </div>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                      Fine-tune with custom learning rate, epochs, and dataset. <span
+                        class="text-orange-400 font-semibold">Recover accuracy</span> while maintaining compression
+                      benefits.
+                    </p>
+                    <div id="detail-5" class="accordion-content">
+                      <div class="pt-4 border-t border-white/10 mt-4">
+                        <div class="space-y-3">
+                          <div class="flex items-center justify-between">
+                            <label class="text-xs text-slate-400 text-white">Learning Rate</label>
+                            <input type="range" class="w-24 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                              min="1" max="100" value="10">
+                          </div>
+                          <div class="flex items-center justify-between ">
+                            <label class="text-xs text-slate-400 text-white">Epochs</label>
+                            <span class="text-xs text-orange-400 font-mono">50</span>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                      <span class="text-xs text-slate-500">Click to expand</span>
+                      <svg class="w-5 h-5 text-slate-400 accordion-icon" id="icon-5" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+
+      <!-- Tips Tab -->
+      <div id="tips" class="tab-content">
+        <div class="glass-ultra rounded-3xl p-8 md:p-12">
+          <h3 class="text-2xl font-bold mb-8 font-display text-center">Pro Optimization Tips</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div
+              class="group p-6 rounded-2xl bg-slate-800/30 border border-white/5 hover:border-violet-500/30 transition-all cursor-pointer"
+              onclick="toggleTip(this)">
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-500/40 transition-colors">
+                  <span class="text-violet-300 font-bold">1</span>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-white mb-2">Start Conservative</h4>
+                  <p class="text-slate-400 text-sm">Begin with 0.9 keep ratio, then gradually decrease based on accuracy
+                    metrics. Monitor validation loss closely.</p>
+                  <div class="mt-3 overflow-hidden h-0 group-hover:h-auto transition-all">
+                    <div class="p-3 rounded-lg bg-violet-500/10 text-xs text-violet-300 mt-2">
+                      💡 Tip: Use higher keep ratios for smaller models.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="group p-6 rounded-2xl bg-slate-800/30 border border-white/5 hover:border-cyan-500/30 transition-all cursor-pointer"
+              onclick="toggleTip(this)">
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-cyan-500/40 transition-colors">
+                  <span class="text-cyan-300 font-bold">2</span>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-white mb-2">Stability First</h4>
+                  <p class="text-slate-400 text-sm">If retraining is unstable, reduce learning rate by 10x and increase
+                    epochs. Use gradient clipping.</p>
+                  <div class="mt-3 overflow-hidden h-0 group-hover:h-auto transition-all">
+                    <div class="p-3 rounded-lg bg-cyan-500/10 text-xs text-cyan-300 mt-2">
+                      ⚙️ Recommended: LR = 1e-4, Epochs = 100 for most models.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="group p-6 rounded-2xl bg-slate-800/30 border border-white/5 hover:border-pink-500/30 transition-all cursor-pointer"
+              onclick="toggleTip(this)">
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-500/40 transition-colors">
+                  <span class="text-pink-300 font-bold">3</span>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-white mb-2">Compare Religiously</h4>
+                  <p class="text-slate-400 text-sm">Always check insights after each run. Look for accuracy drop vs
+                    compression gain sweet spot.</p>
+                  <div class="mt-3 overflow-hidden h-0 group-hover:h-auto transition-all">
+                    <div class="p-3 rounded-lg bg-pink-500/10 text-xs text-pink-300 mt-2">
+                      📊 Metric: Target < 2% accuracy drop for> 3x compression.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="group p-6 rounded-2xl bg-slate-800/30 border border-white/5 hover:border-lime-500/30 transition-all cursor-pointer"
+              onclick="toggleTip(this)">
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-10 h-10 rounded-full bg-lime-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-lime-500/40 transition-colors">
+                  <span class="text-lime-300 font-bold">4</span>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-white mb-2">Layer-wise Analysis</h4>
+                  <p class="text-slate-400 text-sm">Different layers have different sensitivity. Use the Architecture
+                    page to identify robust layers.</p>
+                  <div class="mt-3 overflow-hidden h-0 group-hover:h-auto transition-all">
+                    <div class="p-3 rounded-lg bg-lime-500/10 text-xs text-lime-300 mt-2">
+                      🔍 Attention layers in Transformers are more sensitive than FFN layers.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Demo Cards -->
+    <section class="max-w-6xl mx-auto mb-20">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold font-display mb-4">Explore Other Sections</h2>
+        <p class="text-slate-400">Navigate through our specialized tools and resources</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+          class="group relative overflow-hidden rounded-3xl glass-card p-8 cursor-pointer transform transition-all duration-500 hover:scale-[1.02]"
+          onclick="window.location.href='/grokking'">
+          <div
+            class="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          </div>
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+              <div class="w-16 h-16 rounded-2xl bg-violet-500/20 flex items-center justify-center">
+                <svg class="w-8 h-8 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                  </path>
+                </svg>
+              </div>
+              <div
+                class="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+                <svg class="w-5 h-5 text-white transform group-hover:translate-x-1 transition-transform" fill="none"
+                  stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3">
+                  </path>
+                </svg>
+              </div>
+            </div>
+            <h3 class="text-2xl font-bold font-display text-violet-300 mb-3">Grokking</h3>
+            <p class="text-slate-400 leading-relaxed text-white">Theoretical foundation and mathematical principles behind neural
+              pruning. Understand the "why" before the "how".</p>
+            <div class="mt-6 flex gap-2">
+              <span class="px-3 py-1 rounded-full bg-violet-500/10 text-violet-300 text-xs">Theory</span>
+              <span class="px-3 py-1 rounded-full bg-violet-500/10 text-violet-300 text-xs">Research</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="group relative overflow-hidden rounded-3xl glass-card p-8 cursor-pointer transform transition-all duration-500 hover:scale-[1.02]"
+          onclick="window.location.href='/architecture'">
+          <div
+            class="absolute inset-0 bg-gradient-to-br from-cyan-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          </div>
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+              <div class="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
+                <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                  </path>
+                </svg>
+              </div>
+              <div
+                class="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
+                <svg class="w-5 h-5 text-white transform group-hover:translate-x-1 transition-transform" fill="none"
+                  stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3">
+                  </path>
+                </svg>
+              </div>
+            </div>
+            <h3 class="text-2xl font-bold font-display text-cyan-300 mb-3">Architecture</h3>
+            <p class="text-slate-400 leading-relaxed text-white">Visualize model structures layer-by-layer. Interactive  topology
+              viewer with pruning impact simulation.</p>
+            <div class="mt-6 flex gap-2">
+              <span class="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 text-xs">2D View</span>
+              <span class="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 text-xs">Interactive</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="max-w-4xl mx-auto text-center">
+      <div class="glass-ultra rounded-3xl p-8 md:p-12 relative overflow-hidden">
+        <div
+          class="absolute inset-0 bg-gradient-to-r from-violet-500/10 via-cyan-500/10 to-pink-500/10 animate-pulse-slow">
+        </div>
+        <div class="relative z-10">
+          <h3 class="text-2xl font-bold font-display mb-4">Ready to Optimize?</h3>
+          <p class="text-slate-400 mb-8">Start compressing your models with state-of-the-art pruning techniques.</p>
+          <button class="magnetic-btn text-lg px-8 py-4" onclick="window.location.href='/upload'">
+            <span>Launch TruboCompute</span>
+            <svg class="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z">
+              </path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  {% include "components/footer.html" %}
+  {% include "components/cursor.html" %}
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="{{ url_for('static', filename='js/cursor.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+
+  <script>
+    // Register GSAP ScrollTrigger
+    gsap.registerPlugin(ScrollTrigger);
+
+    // 3D Background Animation using Three.js
+    const initThreeJS = () => {
+      const container = document.getElementById('canvas-container');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      // Create floating particles
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particlesCount = 200;
+      const posArray = new Float32Array(particlesCount * 3);
+
+      for (let i = 0; i < particlesCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 50;
+      }
+
+      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.1,
+        color: 0x8b5cf6,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending
+      });
+
+      const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+      scene.add(particlesMesh);
+
+      // Add wireframe neural network nodes
+      const nodeGeometry = new THREE.IcosahedronGeometry(1, 0);
+      const nodeMaterial = new THREE.MeshBasicMaterial({
+        color: 0x06b6d4,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.3
+      });
+
+      const nodes = [];
+      for (let i = 0; i < 5; i++) {
+        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
+        node.position.set(
+          (Math.random() - 0.5) * 20,
+          (Math.random() - 0.5) * 20,
+          (Math.random() - 0.5) * 10 - 10
+        );
+        node.scale.setScalar(Math.random() * 0.5 + 0.5);
+        scene.add(node);
+        nodes.push(node);
+      }
+
+      camera.position.z = 15;
+
+      // Mouse interaction
+      let mouseX = 0;
+      let mouseY = 0;
+
+      document.addEventListener('mousemove', (event) => {
+        mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+      });
+
+      // Animation loop
+      const animate = () => {
+        requestAnimationFrame(animate);
+
+        particlesMesh.rotation.x += 0.0005;
+        particlesMesh.rotation.y += 0.0005;
+
+        nodes.forEach((node, i) => {
+          node.rotation.x += 0.01 * (i + 1) * 0.1;
+          node.rotation.y += 0.01 * (i + 1) * 0.1;
+          node.position.y += Math.sin(Date.now() * 0.001 + i) * 0.01;
+        });
+
+        // Smooth camera follow
+        camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
+        camera.position.y += (mouseY * 2 - camera.position.y) * 0.05;
+        camera.lookAt(scene.position);
+
+        renderer.render(scene, camera);
+      };
+
+      animate();
+
+      // Resize handler
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    };
+
+    // Scroll Progress
+    const updateScrollProgress = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = scrollTop / docHeight;
+      document.getElementById('scrollProgress').style.transform = `scaleX(${scrollPercent})`;
+
+      // Update workflow line progress
+      const workflowSection = document.getElementById('workflow-section');
+      if (workflowSection) {
+        const rect = workflowSection.getBoundingClientRect();
+        const sectionTop = rect.top;
+        const sectionHeight = rect.height;
+        const progress = Math.max(0, Math.min(1, -sectionTop / (sectionHeight - window.innerHeight)));
+        document.getElementById('progressLine').style.height = `${progress * 100}%`;
+      }
+    };
+
+    window.addEventListener('scroll', updateScrollProgress);
+
+    // GSAP Animations
+    const initAnimations = () => {
+      // Hero text reveal
+      gsap.from("#title-text", {
+        duration: 1.2,
+        y: 100,
+        opacity: 0,
+        ease: "power4.out",
+        delay: 0.2
+      });
+
+      gsap.from("#subtitle", {
+        duration: 1,
+        y: 50,
+        opacity: 0,
+        ease: "power3.out",
+        delay: 0.6
+      });
+
+      // Workflow steps stagger
+      gsap.utils.toArray('.step-3d').forEach((step, i) => {
+        gsap.from(step, {
+          scrollTrigger: {
+            trigger: step,
+            start: "top 80%",
+            toggleActions: "play none none reverse"
+          },
+          duration: 0.8,
+          x: i % 2 === 0 ? -50 : 50,
+          opacity: 0,
+          rotateY: i % 2 === 0 ? 15 : -15,
+          ease: "power3.out"
+        });
+      });
+
+      // Feature cards
+      gsap.from(".tilt-card", {
+        scrollTrigger: {
+          trigger: "#features",
+          start: "top 70%",
+        },
+        duration: 0.6,
+        y: 50,
+        opacity: 0,
+        stagger: 0.1,
+        ease: "back.out(1.7)"
+      });
+    };
+
+    // Tab Switching
+    const switchTab = (tabName) => {
+      // Update buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.toLowerCase().includes(tabName)) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(tabName).classList.add('active');
+    };
+
+    // Accordion Toggle
+    const toggleStepDetail = (stepNum) => {
+      const content = document.getElementById(`detail-${stepNum}`);
+      const icon = document.getElementById(`icon-${stepNum}`);
+
+      content.classList.toggle('active');
+      icon.classList.toggle('active');
+    };
+
+    // Tip Toggle
+    const toggleTip = (element) => {
+      const hidden = element.querySelector('.overflow-hidden');
+      if (hidden.style.height === 'auto') {
+        hidden.style.height = '0';
+      } else {
+        hidden.style.height = 'auto';
+      }
+    };
+
+    // 3D Tilt Effect for Cards
+    const initTilt = () => {
+      document.querySelectorAll('[data-tilt]').forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+
+          const rotateX = ((y - centerY) / centerY) * -15;
+          const rotateY = ((x - centerX) / centerX) * 15;
+
+          card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+        });
+
+        card.addEventListener('mouseleave', () => {
+          card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+        });
+      });
+    };
+
+    // Particle Trail Effect
+    const initParticles = () => {
+      const container = document.getElementById('particles');
+      const particleCount = 20;
+      const particles = [];
+
+      for (let i = 0; i < particleCount; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        container.appendChild(p);
+        particles.push({ el: p, x: 0, y: 0, active: false });
+      }
+
+      let mouseX = 0, mouseY = 0;
+      let currentParticle = 0;
+
+      document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+
+        const p = particles[currentParticle];
+        p.x = mouseX;
+        p.y = mouseY;
+        p.active = true;
+
+        gsap.to(p.el, {
+          x: p.x,
+          y: p.y,
+          opacity: 1,
+          duration: 0.1,
+          onComplete: () => {
+            gsap.to(p.el, {
+              opacity: 0,
+              duration: 0.5,
+              delay: 0.1
+            });
+          }
+        });
+
+        currentParticle = (currentParticle + 1) % particleCount;
+      });
+    };
+
+    // Smooth Scroll
+    const scrollToWorkflow = () => {
+      document.getElementById('workflow-section').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Video Modal Placeholder
+    const showVideoModal = () => {
+      alert('Video demo modal would open here. Integrate with your video player.');
+    };
+
+    // Initialize everything
+    window.addEventListener('load', () => {
+      initThreeJS();
+      initAnimations();
+      initTilt();
+      initParticles();
+    });
+
+    // Reduced motion check
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      gsap.globalTimeline.timeScale(0);
+      document.querySelectorAll('.orb').forEach(orb => {
+        orb.style.animation = 'none';
+      });
+    }
+  </script>
+</body>
+
+</html>

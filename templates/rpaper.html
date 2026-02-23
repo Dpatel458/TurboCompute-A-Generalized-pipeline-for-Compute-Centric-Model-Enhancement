@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>NeuralPrune Research Portal</title>
+
+  <!-- ================= TAILWIND ================= -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- ================= GOOGLE FONT ================= -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+    <!-- ================= GLOBAL CSS ================= -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cursor.css') }}">
+
+  <!-- ================= MATHJAX FOR LATEX ================= -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <!-- ================= TAILWIND CONFIG ================= -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              900: '#0a0f1c',
+              800: '#1e293b',
+              700: '#334155',
+            },
+            violet: {
+              500: '#8b5cf6',
+              400: '#a78bfa',
+            },
+            cyan: {
+              500: '#06b6d4',
+              400: '#22d3ee',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- ================= GLOBAL STYLES ================= -->
+  <style>
+    body {
+      background: #0a0f1c;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.35;
+      animation: float 8s ease-in-out infinite;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.6), transparent);
+      top: -10%;
+      left: -10%;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.6), transparent);
+      bottom: -5%;
+      right: -5%;
+      animation-delay: 2s;
+    }
+
+    .orb-3 {
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.5), transparent);
+      top: 50%;
+      left: 50%;
+      animation-delay: 4s;
+    }
+
+    .glass {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0a0f1c;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+
+    /* Paper overlay styles */
+    .paper-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .paper-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .paper-overlay-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 15, 28, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .paper-overlay-content {
+      position: relative;
+      width: 90%;
+      max-width: 1000px;
+      height: 90%;
+      margin: 2% auto;
+      background: #111827;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 16px;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+    }
+
+    .paper-overlay.active .paper-overlay-content {
+      transform: scale(1);
+    }
+
+    .paper-scroll-area {
+      height: 100%;
+      overflow-y: auto;
+      padding: 40px 48px;
+    }
+
+    /* Paper card hover effects */
+    .paper-card {
+      transition: all 0.3s ease;
+      border: 1px solid rgba(139, 92, 246, 0.15);
+    }
+
+    .paper-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(139, 92, 246, 0.4);
+      box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15);
+    }
+
+    /* Equation styling */
+    .equation-box {
+      background: rgba(6, 182, 212, 0.05);
+      border-left: 3px solid #06b6d4;
+      padding: 16px 20px;
+      margin: 16px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* Section dividers */
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.4), transparent);
+      margin: 48px 0;
+    }
+
+    /* Insight highlight */
+    .insight-box {
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 20px 0;
+    }
+
+    /* Relevance tag */
+    .relevance-tag {
+      display: inline-block;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #a78bfa;
+    }
+
+    /* Close button */
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+
+    .close-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    /* SVG diagram styles */
+    .diagram-container {
+      background: rgba(17, 24, 39, 0.6);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .node {
+      transition: all 0.3s ease;
+    }
+
+    .node:hover {
+      filter: brightness(1.3);
+    }
+
+    /* Narrative section */
+    .narrative-section {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(6, 182, 212, 0.05));
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 16px;
+      padding: 40px;
+    }
+
+    /* Reference styling */
+    .reference-item {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .reference-item:last-child {
+      border-bottom: none;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    /* Lazy load placeholder */
+    .lazy-content {
+      min-height: 100px;
+    }
+
+    /* Animation for cards */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in {
+      animation: fadeInUp 0.5s ease forwards;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="canvas-container"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- ================= NAVBAR ================= -->
+  {% include "components/navbar.html" %}
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="min-h-screen pt-24 pb-16">
+    
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto px-6 mb-16">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">
+          <span class="bg-gradient-to-r from-violet-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            Research Foundations
+          </span>
+        </h1>
+        <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+          Exploring the theoretical underpinnings of masking, pruning, grokking, and compute efficient deep learning
+        </p>
+      </div>
+    </section>
+
+    <!-- Paper Navigation Panel -->
+    <section id="papers" class="max-w-7xl mx-auto px-6 mb-20">
+      <h2 class="text-2xl font-bold mb-8 text-center">
+        <span class="text-violet-400">Research Foundations</span> 
+        <span class="text-slate-400">of Masking, Pruning, Grokking and Green Ai</span>
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Paper Card 1: Lottery Ticket Hypothesis -->
+        <div class="paper-card glass rounded-xl p-6 cursor-pointer animate-fade-in" 
+             onclick="openPaper('paper1')" style="animation-delay: 0.1s;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-violet-500/20 text-violet-300">Pruning</span>
+            <span class="text-xs text-slate-500">2019</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2 text-white">The Lottery Ticket Hypothesis</h3>
+          <p class="text-sm text-slate-400 mb-3">Frankle & Carbin</p>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Dense networks contain sparse subnetworks that can train in isolation to match the original accuracy.
+          </p>
+        </div>
+
+        <!-- Paper Card 2: SNIP -->
+        <div class="paper-card glass rounded-xl p-6 cursor-pointer animate-fade-in" 
+             onclick="openPaper('paper2')" style="animation-delay: 0.15s;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-cyan-500/20 text-cyan-300">Importance Scores</span>
+            <span class="text-xs text-slate-500">2019</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2 text-white">SNIP: Single-shot Network Pruning</h3>
+          <p class="text-sm text-slate-400 mb-3">Lee et al.</p>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Connection sensitivity identified at initialization enables pruning before any training begins.
+          </p>
+        </div>
+
+        <!-- Paper Card 3: Magnitude-based Pruning -->
+        <div class="paper-card glass rounded-xl p-6 cursor-pointer animate-fade-in" 
+             onclick="openPaper('paper3')" style="animation-delay: 0.2s;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-violet-500/20 text-violet-300">Magnitude</span>
+            <span class="text-xs text-slate-500">2015</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2 text-white">Learning both Weights and Connections</h3>
+          <p class="text-sm text-slate-400 mb-3">Han et al.</p>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Iterative magnitude pruning reduces network size by 9-13x without accuracy loss.
+          </p>
+        </div>
+
+        <!-- Paper Card 4: Grokking -->
+        <div class="paper-card glass rounded-xl p-6 cursor-pointer animate-fade-in" 
+             onclick="openPaper('paper4')" style="animation-delay: 0.25s;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-purple-500/20 text-purple-300">Grokking</span>
+            <span class="text-xs text-slate-500">2021</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2 text-white">Grokking: Generalization Beyond Overfitting</h3>
+          <p class="text-sm text-slate-400 mb-3">Power et al.</p>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Networks suddenly generalize after prolonged training, revealing a phase transition in learning.
+          </p>
+        </div>
+
+        <!-- Paper Card 5: Gradient-based Pruning -->
+        <div class="paper-card glass rounded-xl p-6 cursor-pointer animate-fade-in" 
+             onclick="openPaper('paper5')" style="animation-delay: 0.3s;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-cyan-500/20 text-cyan-300">Gradients</span>
+            <span class="text-xs text-slate-500">2017</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2 text-white">Soft Threshold Weight Reparameterization</h3>
+          <p class="text-sm text-slate-400 mb-3">Louizos et al.</p>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Learned sparsity through gradient based optimization with $L_0$ regularization.
+          </p>
+        </div>
+
+        <!-- Paper Card 6: Training Compute -->
+        <div class="paper-card glass rounded-xl p-6 cursor-pointer animate-fade-in" 
+             onclick="openPaper('paper6')" style="animation-delay: 0.35s;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-orange-500/20 text-orange-300">Compute</span>
+            <span class="text-xs text-slate-500">2020</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2 text-white">Scaling Laws for Neural Language Models</h3>
+          <p class="text-sm text-slate-400 mb-3">Kaplan et al.</p>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Power-law relationships between model size, data, compute, and performance.
+          </p>
+        </div>
+
+        <!-- Paper Card 7: Energy Cost -->
+        <div class="paper-card glass rounded-xl p-6 cursor-pointer animate-fade-in" 
+             onclick="openPaper('paper7')" style="animation-delay: 0.4s;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-red-500/20 text-red-300">Energy</span>
+            <span class="text-xs text-slate-500">2019</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2 text-white">Energy and Policy Considerations for Deep Learning</h3>
+          <p class="text-sm text-slate-400 mb-3">Strubell et al.</p>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Training a single NLP model emits 5x the CO2 of a car's lifetime. Pruning reduces this footprint.
+          </p>
+        </div>
+
+        <!-- Paper Card 8: Early Sparsity -->
+        <div class="paper-card glass rounded-xl p-6 cursor-pointer animate-fade-in" 
+             onclick="openPaper('paper8')" style="animation-delay: 0.45s;">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-green-500/20 text-green-300">Early Sparsity</span>
+            <span class="text-xs text-slate-500">2022</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2 text-white">The Early Phase of Neural Network Training</h3>
+          <p class="text-sm text-slate-400 mb-3">Frankle et al.</p>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Critical early training dynamics determine final performance; sparsity patterns emerge rapidly.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Visual Diagrams Section -->
+    <section class="max-w-7xl mx-auto px-6 mb-20">
+      <h2 class="text-2xl font-bold mb-8 text-center">
+        <span class="text-cyan-400">Conceptual</span> 
+        <span class="text-slate-400">Visualizations</span>
+      </h2>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Diagram 1: Masked vs Dense Network -->
+        <div class="diagram-container">
+          <h3 class="text-sm font-semibold mb-4 text-violet-300 text-center">Masked vs. Dense Network</h3>
+          <svg viewBox="0 0 280 200" class="w-full h-auto">
+            <!-- Dense Network -->
+            <text x="60" y="20" text-anchor="middle" class="fill-slate-400" style="font-size: 11px;">Dense</text>
+            <!-- Layer 1 nodes -->
+            <circle cx="30" cy="50" r="6" class="node" fill="#8b5cf6"/>
+            <circle cx="30" cy="80" r="6" class="node" fill="#8b5cf6"/>
+            <circle cx="30" cy="110" r="6" class="node" fill="#8b5cf6"/>
+            <circle cx="30" cy="140" r="6" class="node" fill="#8b5cf6"/>
+            <!-- Layer 2 nodes -->
+            <circle cx="90" cy="65" r="6" class="node" fill="#a78bfa"/>
+            <circle cx="90" cy="95" r="6" class="node" fill="#a78bfa"/>
+            <circle cx="90" cy="125" r="6" class="node" fill="#a78bfa"/>
+            <!-- Connections (dense) -->
+            <g stroke="#4b5563" stroke-width="0.8" opacity="0.6">
+              <line x1="36" y1="50" x2="84" y2="65"/>
+              <line x1="36" y1="50" x2="84" y2="95"/>
+              <line x1="36" y1="50" x2="84" y2="125"/>
+              <line x1="36" y1="80" x2="84" y2="65"/>
+              <line x1="36" y1="80" x2="84" y2="95"/>
+              <line x1="36" y1="80" x2="84" y2="125"/>
+              <line x1="36" y1="110" x2="84" y2="65"/>
+              <line x1="36" y1="110" x2="84" y2="95"/>
+              <line x1="36" y1="110" x2="84" y2="125"/>
+              <line x1="36" y1="140" x2="84" y2="65"/>
+              <line x1="36" y1="140" x2="84" y2="95"/>
+              <line x1="36" y1="140" x2="84" y2="125"/>
+            </g>
+            
+            <!-- Masked Network -->
+            <text x="200" y="20" text-anchor="middle" class="fill-slate-400" style="font-size: 11px;">Pruned (90%)</text>
+            <!-- Layer 1 nodes -->
+            <circle cx="170" cy="50" r="6" class="node" fill="#06b6d4"/>
+            <circle cx="170" cy="80" r="6" class="node" fill="#06b6d4"/>
+            <circle cx="170" cy="110" r="6" class="node" fill="#06b6d4"/>
+            <circle cx="170" cy="140" r="6" class="node" fill="#06b6d4"/>
+            <!-- Layer 2 nodes -->
+            <circle cx="230" cy="65" r="6" class="node" fill="#22d3ee"/>
+            <circle cx="230" cy="95" r="6" class="node" fill="#22d3ee"/>
+            <circle cx="230" cy="125" r="6" class="node" fill="#22d3ee"/>
+            <!-- Connections (sparse - only 2) -->
+            <g stroke="#06b6d4" stroke-width="1.5" opacity="0.9">
+              <line x1="176" y1="50" x2="224" y2="65"/>
+              <line x1="176" y1="110" x2="224" y2="125"/>
+            </g>
+            <!-- Pruned connection indicators -->
+            <g stroke="#374151" stroke-width="0.8" opacity="0.3" stroke-dasharray="3,3">
+              <line x1="176" y1="50" x2="224" y2="95"/>
+              <line x1="176" y1="50" x2="224" y2="125"/>
+              <line x1="176" y1="80" x2="224" y2="65"/>
+              <line x1="176" y1="80" x2="224" y2="95"/>
+              <line x1="176" y1="80" x2="224" y2="125"/>
+              <line x1="176" y1="110" x2="224" y2="65"/>
+              <line x1="176" y1="110" x2="224" y2="95"/>
+              <line x1="176" y1="140" x2="224" y2="65"/>
+              <line x1="176" y1="140" x2="224" y2="95"/>
+              <line x1="176" y1="140" x2="224" y2="125"/>
+            </g>
+            
+            <!-- Arrow -->
+            <path d="M 120 95 L 150 95" stroke="#6b7280" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/>
+              </marker>
+            </defs>
+            <text x="135" y="110" text-anchor="middle" class="fill-slate-500" style="font-size: 9px;">prune</text>
+            
+            <!-- Stats -->
+            <text x="60" y="185" text-anchor="middle" class="fill-slate-500" style="font-size: 10px;">12 connections</text>
+            <text x="200" y="185" text-anchor="middle" class="fill-cyan-400" style="font-size: 10px;">2 connections (83% ↓)</text>
+          </svg>
+        </div>
+
+        <!-- Diagram 2: Grokking Curve -->
+        <div class="diagram-container">
+          <h3 class="text-sm font-semibold mb-4 text-purple-300 text-center">Grokking: Accuracy vs. Epochs</h3>
+          <svg viewBox="0 0 280 200" class="w-full h-auto">
+            <!-- Axes -->
+            <line x1="40" y1="170" x2="260" y2="170" stroke="#4b5563" stroke-width="1.5"/>
+            <line x1="40" y1="170" x2="40" y2="20" stroke="#4b5563" stroke-width="1.5"/>
+            
+            <!-- Axis labels -->
+            <text x="150" y="195" text-anchor="middle" class="fill-slate-500" style="font-size: 10px;">Training Epochs →</text>
+            <text x="15" y="95" text-anchor="middle" class="fill-slate-500" style="font-size: 10px;" transform="rotate(-90, 15, 95)">Accuracy →</text>
+            
+            <!-- Grid lines -->
+            <g stroke="#374151" stroke-width="0.5" opacity="0.3">
+              <line x1="40" y1="130" x2="260" y2="130"/>
+              <line x1="40" y1="90" x2="260" y2="90"/>
+              <line x1="40" y1="50" x2="260" y2="50"/>
+            </g>
+            
+            <!-- Y-axis ticks -->
+            <text x="32" y="173" text-anchor="end" class="fill-slate-500" style="font-size: 9px;">0</text>
+            <text x="32" y="133" text-anchor="end" class="fill-slate-500" style="font-size: 9px;">0.3</text>
+            <text x="32" y="93" text-anchor="end" class="fill-slate-500" style="font-size: 9px;">0.6</text>
+            <text x="32" y="53" text-anchor="end" class="fill-slate-500" style="font-size: 9px;">1.0</text>
+            
+            <!-- Training curve (overfitting) -->
+            <path d="M 40 165 Q 100 140, 140 50 Q 180 25, 260 20" 
+                  stroke="#ef4444" stroke-width="2" fill="none" opacity="0.7"/>
+            <text x="250" y="35" class="fill-red-400" style="font-size: 9px;">train</text>
+            
+            <!-- Validation curve (grokking) -->
+            <path d="M 40 165 Q 120 160, 160 155 Q 180 150, 190 90 Q 200 40, 260 35" 
+                  stroke="#8b5cf6" stroke-width="2.5" fill="none"/>
+            <text x="250" y="50" class="fill-violet-400" style="font-size: 9px;">val (grokking)</text>
+            
+            <!-- Grokking point annotation -->
+            <circle cx="190" cy="90" r="4" fill="#a855f7" stroke="#fff" stroke-width="1"/>
+            <line x1="190" y1="90" x2="220" y2="70" stroke="#a855f7" stroke-width="1" stroke-dasharray="2,2"/>
+            <text x="225" y="70" class="fill-purple-300" style="font-size: 9px;">grokking point</text>
+            
+            <!-- Phase labels -->
+            <text x="100" y="155" text-anchor="middle" class="fill-slate-500" style="font-size: 9px;">memorization</text>
+            <text x="225" y="155" text-anchor="middle" class="fill-slate-500" style="font-size: 9px;">generalization</text>
+          </svg>
+        </div>
+
+        <!-- Diagram 3: Compute Cost vs Epochs -->
+        <div class="diagram-container">
+          <h3 class="text-sm font-semibold mb-4 text-orange-300 text-center">Compute Cost vs. Epochs</h3>
+          <svg viewBox="0 0 280 200" class="w-full h-auto">
+            <!-- Axes -->
+            <line x1="40" y1="170" x2="260" y2="170" stroke="#4b5563" stroke-width="1.5"/>
+            <line x1="40" y1="170" x2="40" y2="20" stroke="#4b5563" stroke-width="1.5"/>
+            
+            <!-- Axis labels -->
+            <text x="150" y="195" text-anchor="middle" class="fill-slate-500" style="font-size: 10px;">Training Epochs →</text>
+            <text x="15" y="95" text-anchor="middle" class="fill-slate-500" style="font-size: 10px;" transform="rotate(-90, 15, 95)">Cumulative FLOPs →</text>
+            
+            <!-- Dense model curve (linear growth) -->
+            <path d="M 40 165 L 260 30" stroke="#ef4444" stroke-width="2.5" fill="none"/>
+            <text x="230" y="50" class="fill-red-400" style="font-size: 9px;">dense model</text>
+            
+            <!-- Pruned model curve (sub-linear) -->
+            <path d="M 40 165 Q 100 150, 150 120 Q 200 80, 260 60" 
+                  stroke="#22c55e" stroke-width="2.5" fill="none"/>
+            <text x="230" y="80" class="fill-green-400" style="font-size: 9px;">pruned model</text>
+            
+            <!-- Early stopping zone -->
+            <rect x="160" y="30" width="80" height="140" fill="url(#diagonalHatch)" opacity="0.2"/>
+            <defs>
+              <pattern id="diagonalHatch" patternUnits="userSpaceOnUse" width="4" height="4">
+                <path d="M-1,1 l2,-2 M0,4 l4,-4 M3,5 l2,-2" stroke="#22c55e" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <text x="200" y="45" text-anchor="middle" class="fill-green-400" style="font-size: 9px;">saved compute</text>
+            
+            <!-- Savings annotation -->
+            <line x1="220" y1="48" x2="220" y2="100" stroke="#22c55e" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="245" y="75" text-anchor="middle" class="fill-green-300" style="font-size: 9px;">~60%</text>
+            <text x="245" y="85" text-anchor="middle" class="fill-green-300" style="font-size: 9px;">reduction</text>
+          </svg>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="section-divider max-w-4xl mx-auto"></div>
+
+    <!-- Project Narrative Section -->
+    <section id="narrative" class="max-w-4xl mx-auto px-6 mb-20">
+      <div class="narrative-section">
+        <h2 class="text-2xl font-bold mb-6 text-center">
+          <span class="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
+            Why Masking, Pruning & Grokking Matter for Compute Efficiency
+          </span>
+        </h2>
+        
+        <div class="space-y-6 text-slate-300 leading-relaxed">
+          
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <span class="text-violet-400 font-bold text-sm">1</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white mb-2">Why Dense Models Waste Computation</h3>
+              <p class="text-slate-400">
+                Neural networks are typically over-parameterized, containing 10-100x more parameters than necessary for the task. 
+                Each forward pass multiplies every input through every weight, regardless of whether that connection contributes meaningfully 
+                to the output. This means <strong>90% of FLOPs may be spent on noise</strong> rather than signal.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <span class="text-cyan-400 font-bold text-sm">2</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white mb-2">How Pruning Reduces Effective Training Cost</h3>
+              <p class="text-slate-400">
+                By identifying and removing low-importance connections <em>before</em> or <em>during</em> training, we reduce the 
+                effective network size. A 90% pruned network requires roughly <strong>10x fewer FLOPs per epoch</strong>. 
+                Combined with the Lottery Ticket Hypothesis, we can find sparse subnetworks that train faster and generalize equally well.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <span class="text-purple-400 font-bold text-sm">3</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white mb-2">Why Grokking Implies Delayed Generalization</h3>
+              <p class="text-slate-400">
+                The grokking phenomenon reveals that networks often <strong>memorize before they understand</strong>. 
+                Training accuracy rises early while validation stays flat—indicating overfitting. Then, at a critical point, 
+                the network "grokks" and validation accuracy jumps. This suggests we're training far longer than necessary 
+                for generalization.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <span class="text-green-400 font-bold text-sm">4</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white mb-2">How Early Sparsity Reduces Total Training Epochs</h3>
+              <p class="text-slate-400">
+                SNIP and related methods show that connection importance can be determined at initialization. 
+                By starting with a sparse architecture, we avoid wasting epochs training connections that will eventually be pruned. 
+                This can reduce total training time by <strong>50-80%</strong> while maintaining accuracy.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+              <span class="text-red-400 font-bold text-sm">5</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white mb-2">Link to Real-World Server Overheating & Energy</h3>
+              <p class="text-slate-400">
+                Training GPT-3 emitted an estimated <strong>552 metric tons of CO2</strong>—equivalent to 120 cars' lifetime emissions. 
+                Data centers consume 1-2% of global electricity, with AI workloads growing 300% annually. Pruning and early sparsity 
+                directly reduce power draw, cooling requirements, and carbon footprint—making AI development more sustainable.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider max-w-4xl mx-auto"></div>
+
+    <!-- References Section -->
+    <section id="references" class="max-w-4xl mx-auto px-6">
+      <h2 class="text-2xl font-bold mb-8 text-center">
+        <span class="text-slate-400">References</span>
+      </h2>
+      
+      <div class="glass rounded-xl p-8">
+        <div class="reference-item text-slate-300">
+          <strong>Frankle, J., & Carbin, M.</strong> (2019). The lottery ticket hypothesis: Finding sparse, trainable neural networks. 
+          <em>International Conference on Learning Representations (ICLR)</em>. 
+          <a href="https://arxiv.org/abs/1803.03635" class="text-violet-400 hover:text-violet-300 underline" target="_blank">arXiv:1803.03635</a>
+        </div>
+        
+        <div class="reference-item text-slate-300">
+          <strong>Lee, N., Ajanthan, T., & Torr, P. H.</strong> (2019). SNIP: Single-shot network pruning based on connection sensitivity. 
+          <em>International Conference on Learning Representations (ICLR)</em>. 
+          <a href="https://arxiv.org/abs/1810.02340" class="text-violet-400 hover:text-violet-300 underline" target="_blank">arXiv:1810.02340</a>
+        </div>
+        
+        <div class="reference-item text-slate-300">
+          <strong>Han, S., Pool, J., Tran, J., & Dally, W.</strong> (2015). Learning both weights and connections for efficient neural networks. 
+          <em>Advances in Neural Information Processing Systems (NeurIPS)</em>, 28. 
+          <a href="https://arxiv.org/abs/1506.02626" class="text-violet-400 hover:text-violet-300 underline" target="_blank">arXiv:1506.02626</a>
+        </div>
+        
+        <div class="reference-item text-slate-300">
+          <strong>Power, A., Burda, Y., Edwards, H., Babuschkin, I., & Misra, V.</strong> (2022). Grokking: Generalization beyond overfitting on small algorithmic datasets. 
+          <em>arXiv preprint</em>. 
+          <a href="https://arxiv.org/abs/2201.02177" class="text-violet-400 hover:text-violet-300 underline" target="_blank">arXiv:2201.02177</a>
+        </div>
+        
+        <div class="reference-item text-slate-300">
+          <strong>Louizos, C., Welling, M., & Kingma, D. P.</strong> (2018). Learning sparse neural networks through $L_0$ regularization. 
+          <em>International Conference on Learning Representations (ICLR)</em>. 
+          <a href="https://arxiv.org/abs/1712.01312" class="text-violet-400 hover:text-violet-300 underline" target="_blank">arXiv:1712.01312</a>
+        </div>
+        
+        <div class="reference-item text-slate-300">
+          <strong>Kaplan, J., McCandlish, S., Henighan, T., Brown, T. B., Chess, B., Child, R., ... & Amodei, D.</strong> (2020). Scaling laws for neural language models. 
+          <em>arXiv preprint</em>. 
+          <a href="https://arxiv.org/abs/2001.08361" class="text-violet-400 hover:text-violet-300 underline" target="_blank">arXiv:2001.08361</a>
+        </div>
+        
+        <div class="reference-item text-slate-300">
+          <strong>Strubell, E., Ganesh, A., & McCallum, A.</strong> (2019). Energy and policy considerations for deep learning in NLP. 
+          <em>Proceedings of the 57th ACL</em>, 3645-3650. 
+          <a href="https://arxiv.org/abs/1906.02243" class="text-violet-400 hover:text-violet-300 underline" target="_blank">arXiv:1906.02243</a>
+        </div>
+        
+        <div class="reference-item text-slate-300">
+          <strong>Frankle, J., Dziugaite, G. K., Roy, D., & Carbin, M.</strong> (2020). Linear mode connectivity and the lottery ticket hypothesis. 
+          <em>International Conference on Machine Learning (ICML)</em>, 3259-3269. 
+          <a href="https://arxiv.org/abs/1912.05671" class="text-violet-400 hover:text-violet-300 underline" target="_blank">arXiv:1912.05671</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  {% include "components/footer.html" %}
+
+  <!-- ================= CURSOR ================= -->
+  {% include "components/cursor.html" %}
+
+
+  <!-- ================= PAPER OVERLAYS ================= -->
+  
+  <!-- Overlay 1: Lottery Ticket Hypothesis -->
+  <div id="paper1" class="paper-overlay">
+    <div class="paper-overlay-backdrop" onclick="closePaper('paper1')"></div>
+    <div class="paper-overlay-content">
+      <button class="close-btn" onclick="closePaper('paper1')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="paper-scroll-area">
+        <div class="max-w-3xl mx-auto">
+          <span class="relevance-tag mb-4">Core Paper</span>
+          <h1 class="text-3xl font-bold mb-4 text-white">The Lottery Ticket Hypothesis</h1>
+          <p class="text-slate-400 mb-6">Jonathan Frankle & Michael Carbin (ICLR 2019)</p>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Abstract</h2>
+          <p class="text-slate-300 leading-relaxed mb-6">
+            Neural network pruning techniques can reduce the parameter counts of trained networks by over 90%, 
+            decreasing storage requirements and improving inference-time performance without sacrificing accuracy. 
+            We find that within a large neural network, there exist smaller subnetworks—<strong>winning tickets</strong>—that 
+            can train in isolation to reach comparable accuracy in a comparable number of iterations. These 
+            winning tickets are found by training a network, pruning it, and resetting the remaining connections 
+            to their initial values.
+          </p>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Key Equations</h2>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Pruning mask at iteration $t$:</p>
+            $$m^{(t)}_{ij} = \mathbb{1}\left[|w^{(t)}_{ij}| \geq \tau^{(t)}\right]$$
+            <p class="text-sm text-slate-400 mt-2">where $\tau^{(t)}$ is the threshold for keeping connections at pruning iteration $t$.</p>
+          </div>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Winning ticket reset:</p>
+            $$\theta^{(0)}_m = m \odot \theta^{(0)}$$
+            <p class="text-sm text-slate-400 mt-2">The winning ticket is initialized to the original random initialization, masked by the final pruning mask.</p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Core Insight</h2>
+          <div class="insight-box">
+            <p class="text-slate-300">
+              The key finding is that <strong>initialization matters</strong>. When pruned networks are retrained 
+              from scratch with new random initializations, they perform poorly. But when reset to their 
+              <em>original</em> initialization (the winning ticket), they match the full network's performance. 
+              This suggests that the original initialization, combined with the pruning mask, encodes valuable 
+              information about the optimization landscape.
+            </p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Relevance to This Project</h2>
+          <p class="text-slate-300 leading-relaxed">
+            The Lottery Ticket Hypothesis validates our approach to masking and pruning: we don't need to train 
+            the full dense network to find good sparse architectures. By identifying winning tickets early, 
+            we can reduce training compute by 90%+ while maintaining accuracy. This directly addresses our goal 
+            of reducing server load and energy consumption.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay 2: SNIP -->
+  <div id="paper2" class="paper-overlay">
+    <div class="paper-overlay-backdrop" onclick="closePaper('paper2')"></div>
+    <div class="paper-overlay-content">
+      <button class="close-btn" onclick="closePaper('paper2')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="paper-scroll-area">
+        <div class="max-w-3xl mx-auto">
+          <span class="relevance-tag mb-4">Single-shot Pruning</span>
+          <h1 class="text-3xl font-bold mb-4 text-white">SNIP: Single-shot Network Pruning</h1>
+          <p class="text-slate-400 mb-6">Namhoon Lee, Thalaiyasingam Ajanthan, & Philip Torr (ICLR 2019)</p>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Abstract</h2>
+          <p class="text-slate-300 leading-relaxed mb-6">
+            We propose a novel approach that prunes networks at initialization—before any training—based on 
+            <strong>connection sensitivity</strong>. Our method identifies connections that have the largest 
+            impact on the loss function at initialization, allowing us to prune up to 95% of connections 
+            without ever training the network, while maintaining competitive accuracy after training the 
+            sparse network.
+          </p>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Key Equations</h2>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Connection sensitivity (importance score):</p>
+            $$s_{ij} = \left| \frac{\partial \mathcal{L}}{\partial w_{ij}} \cdot w_{ij} \right|$$
+            <p class="text-sm text-slate-400 mt-2">This measures how much the loss changes when weight $w_{ij}$ is perturbed.</p>
+          </div>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Pruning criterion (keep top-$k$ connections):</p>
+            $$m_{ij} = \mathbb{1}\left[s_{ij} \geq \tau_k\right]$$
+            <p class="text-sm text-slate-400 mt-2">where $\tau_k$ is the threshold that keeps exactly $k$% of connections.</p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Core Insight</h2>
+          <div class="insight-box">
+            <p class="text-slate-300">
+              SNIP's breakthrough is that <strong>importance can be determined before training</strong>. 
+              By computing gradients at initialization, we identify which connections would contribute most 
+              to learning—without spending compute on training the full network first. This enables 
+              "single-shot" pruning: prune once, then train the sparse network directly.
+            </p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Relevance to This Project</h2>
+          <p class="text-slate-300 leading-relaxed">
+            SNIP is foundational to our early-sparsity approach. Instead of training a dense network and 
+            then pruning (wasteful), we can apply SNIP at initialization and train sparse from the start. 
+            This eliminates the "overhead" phase of dense training, directly reducing total FLOPs and energy 
+            consumption by 50-90%.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay 3: Magnitude-based Pruning -->
+  <div id="paper3" class="paper-overlay">
+    <div class="paper-overlay-backdrop" onclick="closePaper('paper3')"></div>
+    <div class="paper-overlay-content">
+      <button class="close-btn" onclick="closePaper('paper3')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="paper-scroll-area">
+        <div class="max-w-3xl mx-auto">
+          <span class="relevance-tag mb-4">Magnitude Pruning</span>
+          <h1 class="text-3xl font-bold mb-4 text-white">Learning both Weights and Connections</h1>
+          <p class="text-slate-400 mb-6">Song Han, Jeff Pool, John Tran, & William Dally (NeurIPS 2015)</p>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Abstract</h2>
+          <p class="text-slate-300 leading-relaxed mb-6">
+            We introduce a three-stage pipeline for neural network compression: (1) train a dense network 
+            to learn which connections are important, (2) prune unimportant connections (those with small 
+            weights), and (3) retrain the sparse network to fine-tune the remaining connections. Our method 
+            reduces the parameter count of AlexNet by 9x and VGG-16 by 13x without loss of accuracy.
+          </p>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Key Equations</h2>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Magnitude-based pruning criterion:</p>
+            $$m_{ij} = \mathbb{1}\left[|w_{ij}| > \theta\right]$$
+            <p class="text-sm text-slate-400 mt-2">Connections with magnitude below threshold $\theta$ are removed.</p>
+          </div>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Iterative pruning schedule:</p>
+            $$\theta^{(t)} = \text{percentile}\left(|\mathbf{W}|, p^{(t)}\right)$$
+            <p class="text-sm text-slate-400 mt-2">The threshold increases over iterations to achieve target sparsity $p^{(t)}$.</p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Core Insight</h2>
+          <div class="insight-box">
+            <p class="text-slate-300">
+              The magnitude of a weight is a surprisingly effective proxy for importance. Small weights 
+              contribute less to the output and can be removed with minimal impact. The key is 
+              <strong>iterative pruning with retraining</strong>: pruning too aggressively at once damages 
+              the network, but gradual pruning allows the network to adapt.
+            </p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Relevance to This Project</h2>
+          <p class="text-slate-300 leading-relaxed">
+            Magnitude pruning remains a baseline for comparison. While SNIP prunes at initialization, 
+            magnitude pruning provides a strong post-training compression method. Our project can use 
+            magnitude pruning as a "second pass" after training to further reduce model size for deployment.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay 4: Grokking -->
+  <div id="paper4" class="paper-overlay">
+    <div class="paper-overlay-backdrop" onclick="closePaper('paper4')"></div>
+    <div class="paper-overlay-content">
+      <button class="close-btn" onclick="closePaper('paper4')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="paper-scroll-area">
+        <div class="max-w-3xl mx-auto">
+          <span class="relevance-tag mb-4">Generalization Phenomenon</span>
+          <h1 class="text-3xl font-bold mb-4 text-white">Grokking: Generalization Beyond Overfitting</h1>
+          <p class="text-slate-400 mb-6">Alethea Power et al. (OpenAI, 2022)</p>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Abstract</h2>
+          <p class="text-slate-300 leading-relaxed mb-6">
+            We report a surprising phenomenon: small neural networks trained on algorithmic tasks exhibit 
+            a <strong>phase transition</strong> from memorization to generalization. Initially, training 
+            accuracy rises while validation accuracy remains near zero—indicating pure memorization. Then, 
+            after many additional epochs, validation accuracy suddenly jumps to near-perfect levels. We 
+            term this delayed generalization "grokking."
+          </p>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Key Equations</h2>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Training dynamics (simplified):</p>
+            $$\mathcal{L}_{\text{train}} \downarrow \text{ rapidly}, \quad \mathcal{L}_{\text{val}} \approx \text{constant}$$
+            $$\text{After } T_{\text{grok}} \text{ epochs: } \mathcal{L}_{\text{val}} \downarrow \text{ suddenly}$$
+          </div>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Weight decay and grokking:</p>
+            $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{task}} + \lambda \|\mathbf{W}\|_2^2$$
+            <p class="text-sm text-slate-400 mt-2">Strong weight decay ($\lambda$) accelerates grokking by favoring simpler solutions.</p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Core Insight</h2>
+          <div class="insight-box">
+            <p class="text-slate-300">
+              Grokking reveals that <strong>generalization is not gradual</strong>—it's a phase transition. 
+              The network first memorizes the training data (high capacity, overfitting), then slowly 
+              "discards" unnecessary complexity due to regularization, eventually finding a simple, 
+              generalizable solution. The delay suggests we're training far longer than necessary.
+            </p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Relevance to This Project</h2>
+          <p class="text-slate-300 leading-relaxed">
+            Grokking has profound implications for compute efficiency. If networks eventually find simple 
+            solutions, why train the full complex network for so long? By combining grokking insights with 
+            early pruning, we can potentially identify the "generalizable subnetwork" much earlier, 
+            stopping training at the grokking point rather than continuing indefinitely.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay 5: Gradient-based Pruning -->
+  <div id="paper5" class="paper-overlay">
+    <div class="paper-overlay-backdrop" onclick="closePaper('paper5')"></div>
+    <div class="paper-overlay-content">
+      <button class="close-btn" onclick="closePaper('paper5')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="paper-scroll-area">
+        <div class="max-w-3xl mx-auto">
+          <span class="relevance-tag mb-4">Learned Sparsity</span>
+          <h1 class="text-3xl font-bold mb-4 text-white">Learning Sparse Neural Networks via $L_0$ Regularization</h1>
+          <p class="text-slate-400 mb-6">Christos Louizos, Max Welling, & Diederik Kingma (ICLR 2018)</p>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Abstract</h2>
+          <p class="text-slate-300 leading-relaxed mb-6">
+            We propose a method for learning sparse neural networks through gradient-based optimization 
+            with $L_0$ regularization. By reparameterizing the $L_0$ norm using hard concrete distributions, 
+            we obtain a differentiable relaxation that allows end-to-end training of both weights and 
+            sparsity patterns, achieving state-of-the-art compression rates.
+          </p>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Key Equations</h2>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">$L_0$ regularized objective:</p>
+            $$\mathcal{L}(\theta) = \mathbb{E}_{q(z|\pi)}\left[\mathcal{L}(\theta \odot z)\right] + \lambda \sum_i \mathbb{P}(z_i \neq 0)$$
+            <p class="text-sm text-slate-400 mt-2">where $z$ are binary gates and $\pi$ are gate parameters.</p>
+          </div>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Hard concrete distribution (reparameterization):</p>
+            $$u \sim \mathcal{U}(0, 1), \quad s = \text{Sigmoid}\left(\frac{\log u - \log(1-u) + \log \alpha}{\beta}\right)$$
+            $$\bar{s} = s \cdot (\zeta - \gamma) + \gamma, \quad z = \min(1, \max(0, \bar{s}))$$
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Core Insight</h2>
+          <div class="insight-box">
+            <p class="text-slate-300">
+              The $L_0$ norm (count of non-zero parameters) is non-differentiable, but through 
+              <strong>stochastic reparameterization</strong> with hard concrete distributions, we can 
+              optimize it with standard gradient descent. This enables learning sparsity patterns 
+              jointly with weights, rather than pruning as a separate step.
+            </p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Relevance to This Project</h2>
+          <p class="text-slate-300 leading-relaxed">
+            Learned sparsity offers a principled alternative to heuristic pruning. By treating sparsity 
+            as part of the optimization objective, we can discover compression rates that balance 
+            accuracy and efficiency optimally. This complements our SNIP-based initialization approach.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay 6: Scaling Laws -->
+  <div id="paper6" class="paper-overlay">
+    <div class="paper-overlay-backdrop" onclick="closePaper('paper6')"></div>
+    <div class="paper-overlay-content">
+      <button class="close-btn" onclick="closePaper('paper6')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="paper-scroll-area">
+        <div class="max-w-3xl mx-auto">
+          <span class="relevance-tag mb-4">Scaling Laws</span>
+          <h1 class="text-3xl font-bold mb-4 text-white">Scaling Laws for Neural Language Models</h1>
+          <p class="text-slate-400 mb-6">Jared Kaplan et al. (OpenAI, 2020)</p>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Abstract</h2>
+          <p class="text-slate-300 leading-relaxed mb-6">
+            We study empirical scaling laws for language model performance on the cross-entropy loss. 
+            We find that performance depends predictably on model size ($N$), dataset size ($D$), and 
+            training compute ($C$) according to power-law relationships. These laws enable predicting 
+            the optimal model size for a given compute budget.
+          </p>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Key Equations</h2>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Loss vs. model size (power law):</p>
+            $$L(N) = \left(\frac{N_c}{N}\right)^{\alpha_N}, \quad \alpha_N \approx 0.076$$
+            <p class="text-sm text-slate-400 mt-2">As model size increases, loss decreases following a power law.</p>
+          </div>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Loss vs. training compute:</p>
+            $$L(C) = \left(\frac{C_c}{C}\right)^{\alpha_C}, \quad \alpha_C \approx 0.050$$
+            <p class="text-sm text-slate-400 mt-2">Compute-optimal training requires balancing model size and training tokens.</p>
+          </div>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Chinchilla scaling (optimal allocation):</p>
+            $$N_{\text{opt}} \propto C^{0.5}, \quad D_{\text{opt}} \propto C^{0.5}$$
+            <p class="text-sm text-slate-400 mt-2">For a given compute budget, model size and data should scale equally.</p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Core Insight</h2>
+          <div class="insight-box">
+            <p class="text-slate-300">
+              Performance scales predictably with resources, but <strong>returns diminish</strong>. 
+              Doubling model size yields only a constant reduction in loss. This means large models 
+              are increasingly inefficient—pruning and sparsity can help us achieve similar performance 
+              with far less compute by finding the "effective" model size.
+            </p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Relevance to This Project</h2>
+          <p class="text-slate-300 leading-relaxed">
+            Scaling laws tell us that bigger isn't always better. By pruning, we can find smaller 
+            models that achieve near-optimal performance for a given task. The power-law relationships 
+            help us predict how much we can prune before hitting the accuracy-compute Pareto frontier.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay 7: Energy Cost -->
+  <div id="paper7" class="paper-overlay">
+    <div class="paper-overlay-backdrop" onclick="closePaper('paper7')"></div>
+    <div class="paper-overlay-content">
+      <button class="close-btn" onclick="closePaper('paper7')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="paper-scroll-area">
+        <div class="max-w-3xl mx-auto">
+          <span class="relevance-tag mb-4">Energy & Policy</span>
+          <h1 class="text-3xl font-bold mb-4 text-white">Energy and Policy Considerations for Deep Learning</h1>
+          <p class="text-slate-400 mb-6">Emma Strubell, Ananya Ganesh, & Andrew McCallum (ACL 2019)</p>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Abstract</h2>
+          <p class="text-slate-300 leading-relaxed mb-6">
+            We quantify the carbon emissions and financial costs of training modern NLP models. 
+            Training a single Transformer model with neural architecture search emits an estimated 
+            <strong>284 metric tons of CO2</strong>—equivalent to 5 cars' lifetimes. We argue for 
+            efficiency as a first-class citizen in model design and provide recommendations for 
+            reducing the environmental impact of AI research.
+          </p>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Key Findings</h2>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">CO2 emissions from training:</p>
+            $$\text{CO}_2 \text{ (kg)} = \text{Energy (kWh)} \times \text{PUE} \times \text{Carbon Intensity}$$
+            <p class="text-sm text-slate-400 mt-2">PUE (Power Usage Effectiveness) accounts for data center overhead (~1.58).</p>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+            <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <p class="text-2xl font-bold text-red-400">284</p>
+              <p class="text-sm text-slate-400">metric tons CO2 for NAS-trained Transformer</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <p class="text-2xl font-bold text-orange-400">$3-12M</p>
+              <p class="text-sm text-slate-400">cloud compute cost for large NLP models</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <p class="text-2xl font-bold text-yellow-400">626,000</p>
+              <p class="text-sm text-slate-400">lbs of CO2 for GPT-2 training</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <p class="text-2xl font-bold text-green-400">10-100x</p>
+              <p class="text-sm textlate-400">potential reduction with efficient methods</p>
+            </div>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Core Insight</h2>
+          <div class="insight-box">
+            <p class="text-slate-300">
+              The environmental cost of AI is substantial and growing. <strong>Efficiency is not just 
+              an engineering concern—it's an ethical imperative.</strong> Pruning, quantization, and 
+              efficient architectures can reduce emissions by orders of magnitude without sacrificing 
+              task performance.
+            </p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Relevance to This Project</h2>
+          <p class="text-slate-300 leading-relaxed">
+            This paper provides the ethical and environmental motivation for our work. Every FLOP saved 
+            through pruning is a reduction in carbon emissions. A 90% pruned network trained with early 
+            sparsity could reduce the environmental footprint of model training by similar margins—making 
+            AI research more accessible and sustainable.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay 8: Early Sparsity -->
+  <div id="paper8" class="paper-overlay">
+    <div class="paper-overlay-backdrop" onclick="closePaper('paper8')"></div>
+    <div class="paper-overlay-content">
+      <button class="close-btn" onclick="closePaper('paper8')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="paper-scroll-area">
+        <div class="max-w-3xl mx-auto">
+          <span class="relevance-tag mb-4">Training Dynamics</span>
+          <h1 class="text-3xl font-bold mb-4 text-white">The Early Phase of Neural Network Training</h1>
+          <p class="text-slate-400 mb-6">Jonathan Frankle et al. (ICLR 2020)</p>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Abstract</h2>
+          <p class="text-slate-300 leading-relaxed mb-6">
+            We study the early phase of neural network training and find that the initial training 
+            dynamics critically determine the final performance. The network's trajectory in the 
+            first few epochs sets the "course" for the remainder of training. We also find that 
+            sparse networks can be trained from the start if the sparsity pattern is chosen carefully.
+          </p>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Key Equations</h2>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Linear mode connectivity:</p>
+            $$\mathcal{L}\left(\gamma \theta_1 + (1-\gamma) \theta_2\right) \approx \gamma \mathcal{L}(\theta_1) + (1-\gamma) \mathcal{L}(\theta_2)$$
+            <p class="text-sm text-slate-400 mt-2">If two solutions are linearly connected in loss landscape, they belong to the same basin.</p>
+          </div>
+          
+          <div class="equation-box">
+            <p class="text-sm text-slate-400 mb-2">Early training stability:</p>
+            $$\|\nabla_{\theta} \mathcal{L}(\theta^{(t)})\| \text{ determines long-term trajectory}$$
+            <p class="text-sm text-slate-400 mt-2">Gradient norms in early training predict final performance.</p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Core Insight</h2>
+          <div class="insight-box">
+            <p class="text-slate-300">
+              The first few epochs of training are disproportionately important. <strong>What happens 
+              early determines where the network ends up.</strong> This means pruning masks identified 
+              early (via SNIP or similar) can guide the entire training trajectory, making early 
+              sparsity not just possible but potentially beneficial.
+            </p>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 text-violet-300">Relevance to This Project</h2>
+          <p class="text-slate-300 leading-relaxed">
+            This validates our focus on early sparsity. If the early phase matters most, then applying 
+            sparsity early (rather than training dense and pruning later) should preserve—or even 
+            improve—final performance while dramatically reducing compute. The "linear mode connectivity" 
+            finding suggests winning tickets exist in the same loss basin as the full network.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+    <!-- ================= GLOBAL JS ================= -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="{{ url_for('static', filename='js/cursor.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <!-- ================= JAVASCRIPT ================= -->
+  <script>
+    function initThreeBackground() {
+      const container = document.getElementById('canvas-container');
+      if (!container || typeof THREE === 'undefined') return;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particlesCount = 180;
+      const posArray = new Float32Array(particlesCount * 3);
+
+      for (let i = 0; i < particlesCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 24;
+      }
+
+      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.08,
+        color: 0x8b5cf6,
+        transparent: true,
+        opacity: 0.55,
+      });
+
+      const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+      scene.add(particlesMesh);
+
+      camera.position.z = 12;
+
+      const animate = () => {
+        particlesMesh.rotation.y += 0.0007;
+        particlesMesh.rotation.x += 0.0003;
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      };
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    initThreeBackground();
+
+    // ============================================
+    // PAPER OVERLAY SYSTEM
+    // ============================================
+    
+    /**
+     * Open a paper overlay by ID
+     * @param {string} paperId - The ID of the paper overlay to open
+     */
+    function openPaper(paperId) {
+      const overlay = document.getElementById(paperId);
+      if (overlay) {
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        
+        // Trigger MathJax re-render for this overlay
+        if (window.MathJax) {
+          MathJax.typesetPromise([overlay]).catch((err) => {
+            console.log('MathJax typeset failed:', err);
+          });
+        }
+      }
+    }
+    
+    /**
+     * Close a paper overlay by ID
+     * @param {string} paperId - The ID of the paper overlay to close
+     */
+    function closePaper(paperId) {
+      const overlay = document.getElementById(paperId);
+      if (overlay) {
+        overlay.classList.remove('active');
+        document.body.style.overflow = ''; // Restore background scrolling
+      }
+    }
+    
+    /**
+     * Close all open paper overlays
+     */
+    function closeAllPapers() {
+      const overlays = document.querySelectorAll('.paper-overlay.active');
+      overlays.forEach(overlay => {
+        overlay.classList.remove('active');
+      });
+      document.body.style.overflow = '';
+    }
+    
+    // ============================================
+    // KEYBOARD NAVIGATION
+    // ============================================
+    
+    /**
+     * Handle ESC key to close overlays
+     */
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeAllPapers();
+      }
+    });
+    
+    // ============================================
+    // SMOOTH SCROLL FOR NAV LINKS
+    // ============================================
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+    
+    // ============================================
+    // LAZY LOADING FOR OVERLAYS
+    // ============================================
+    
+    /**
+     * Intersection Observer for lazy-loading overlay content
+     * Overlays are lightweight until opened, then MathJax renders
+     */
+    const overlayObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Pre-load MathJax when overlay is about to be viewed
+          const overlay = entry.target;
+          overlayObserver.unobserve(overlay);
+        }
+      });
+    }, {
+      rootMargin: '100px'
+    });
+    
+    // Observe all paper overlays
+    document.querySelectorAll('.paper-overlay').forEach(overlay => {
+      overlayObserver.observe(overlay);
+    });
+    
+    // ============================================
+    // SCROLL ANIMATIONS
+    // ============================================
+    
+    /**
+     * Animate elements as they enter viewport
+     */
+    const animateOnScroll = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, {
+      threshold: 0.1
+    });
+    
+    // Observe paper cards for scroll animation
+    document.querySelectorAll('.paper-card').forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = `opacity 0.5s ease ${index * 0.05}s, transform 0.5s ease ${index * 0.05}s`;
+      animateOnScroll.observe(card);
+    });
+    
+    // ============================================
+    // CONSOLE WELCOME MESSAGE
+    // ============================================
+    
+    console.log('%c🔬 NeuralPrune Research Portal', 'color: #8b5cf6; font-size: 16px; font-weight: bold;');
+    console.log('%cExploring masking, pruning, grokking, and compute-efficient deep learning.', 'color: #64748b;');
+    console.log('%cPress ESC to close paper overlays', 'color: #06b6d4;');
+  </script>
+
+</body>
+</html>
