@@ -252,6 +252,12 @@ def _effective_transformer_flops(model, masks):
             flops += _attention_flops(seq_len, embed_dim) * (kept / heads)
     return flops
 
+def format_flops(flops):
+    if flops >= 1e9:
+        return f"{flops / 1e9:.3f}"
+    else:
+        return f"{flops:.3f}"
+
 
 def prune_transformer_heads(model_path, keep_ratio, output_dir):
     os.makedirs(output_dir, exist_ok=True)
@@ -283,8 +289,8 @@ def prune_transformer_heads(model_path, keep_ratio, output_dir):
     masked_model.save(pruned_path)
 
     report = {
-        "baseline_flops": int(baseline_flops),
-        "effective_flops": int(effective_flops),
+        "baseline_flops": format_flops(baseline_flops),
+        "effective_flops": format_flops(effective_flops),
         "reduction": round((1 - (effective_flops / baseline_flops)) * 100, 2),
         "heads_pruned": int(
             sum(
