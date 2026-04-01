@@ -1,0 +1,288 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruboCompute</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cursor.css') }}">
+
+  <style>
+    body {
+      background-color: #0a0f1c;
+      background-image:
+        linear-gradient(rgba(10, 15, 28, 0.82), rgba(10, 15, 28, 0.82)),
+        url('/static/assets/images/metrics-bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .glass {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+
+<body>
+
+  {% include "components/navbar.html" %}
+
+  <main class="pt-40 pb-24 px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto">
+
+      <!-- HEADER -->
+      <div class="text-center mb-16">
+        <span class="inline-block px-4 py-1.5 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-full mb-6">
+          Pruning Completed
+        </span>
+
+        <h1 class="text-4xl sm:text-5xl font-black mb-6 uppercase">
+          {{ model_type }} <span class="text-emerald-400">Pruning Results</span>
+        </h1>
+
+        <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+          Structured pruning completed successfully.
+        </p>
+      </div>
+
+      <!-- ================= SUMMARY ================= -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+
+        {% if model_type == "fnn" %}
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Baseline FLOPs</p>
+          <p class="text-3xl font-black text-violet-400">
+            {{ metrics.baseline_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Pruned FLOPs</p>
+          <p class="text-3xl font-black text-cyan-400">
+            {{ metrics.pruned_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Reduction</p>
+          <p class="text-3xl font-black text-emerald-400">
+            {{ (metrics.reduction * 100) | round(2) }}%
+          </p>
+        </div>
+        {% endif %}
+
+        {% if model_type == "cnn" %}
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Base GFLOPs</p>
+          <p class="text-3xl font-black text-violet-400">
+            {{ metrics.base_gflops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Pruned GFLOPs</p>
+          <p class="text-3xl font-black text-cyan-400">
+            {{ metrics.pruned_gflops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Reduction</p>
+          <p class="text-3xl font-black text-emerald-400">
+            {{ metrics.reduction }}%
+          </p>
+        </div>
+        {% endif %}
+
+        {% if model_type == "resnet" %}
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Baseline FLOPs</p>
+          <p class="text-3xl font-black text-violet-400">
+            {{ metrics.baseline_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Effective FLOPs</p>
+          <p class="text-3xl font-black text-cyan-400">
+            {{ metrics.effective_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Reduction</p>
+          <p class="text-3xl font-black text-emerald-400">
+            {{ metrics.reduction }}%
+          </p>
+        </div>
+        {% endif %}
+
+        {% if model_type == "mobilenet" %}
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Baseline FLOPs</p>
+          <p class="text-3xl font-black text-violet-400">
+            {{ metrics.baseline_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Effective FLOPs</p>
+          <p class="text-3xl font-black text-cyan-400">
+            {{ metrics.effective_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Reduction</p>
+          <p class="text-3xl font-black text-emerald-400">
+            {{ metrics.reduction }}%
+          </p>
+        </div>
+        {% endif %}
+
+        {% if model_type == "efficientnet" %}
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Baseline FLOPs</p>
+          <p class="text-3xl font-black text-violet-400">
+            {{ metrics.baseline_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Effective FLOPs</p>
+          <p class="text-3xl font-black text-cyan-400">
+            {{ metrics.effective_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Reduction</p>
+          <p class="text-3xl font-black text-emerald-400">
+            {{ metrics.reduction }}%
+          </p>
+        </div>
+        {% endif %}
+
+        {% if model_type == "transformer" %}
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Baseline FLOPs</p>
+          <p class="text-3xl font-black text-violet-400">
+            {{ metrics.baseline_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Effective FLOPs</p>
+          <p class="text-3xl font-black text-cyan-400">
+            {{ metrics.effective_flops }}
+          </p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-400 text-sm mb-2">Reduction</p>
+          <p class="text-3xl font-black text-emerald-400">
+            {{ metrics.reduction }}%
+          </p>
+          <p class="text-xs text-slate-400 mt-3">
+            Heads kept: {{ metrics.heads_kept }} | pruned: {{ metrics.heads_pruned }}
+          </p>
+        </div>
+        {% endif %}
+
+
+
+      </div>
+
+      <!-- ================= ACTIONS ================= -->
+      <div class="glass rounded-3xl p-10">
+        <h2 class="text-2xl font-bold mb-8 text-center">Next Actions</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="text-center">
+            <a href="{{ url_for('download', filename=pruned_model) }}" class="block px-6 py-4 rounded-xl font-bold
+                    bg-gradient-to-r from-violet-500 to-cyan-500
+                    hover:opacity-90 transition">
+              Download Pruned Model
+            </a>
+            <p class="text-slate-400 text-sm mt-3">
+              Optimized model file
+            </p>
+          </div>
+
+          <div class="text-center">
+            <a href="{{ url_for(
+      'retrain',
+      model=pruned_model,
+      model_type=model_type,
+      base_model=base_model,
+      dataset_dir=dataset_dir if dataset_dir is defined else ''
+  ) }}" class="block px-6 py-4 rounded-xl font-bold
+            bg-gradient-to-r from-violet-500 to-cyan-500
+            hover:opacity-90 transition">
+              Retrain Model
+            </a>
+
+            <p class="text-slate-400 text-sm mt-3">
+              Fine-tune the pruned model
+            </p>
+          </div>
+
+
+          <div class="text-center">
+            {% set base_flops = metrics.baseline_flops if metrics.baseline_flops is defined else metrics.base_gflops if
+            metrics.base_gflops is defined else '' %}
+            {% set pruned_flops = metrics.pruned_flops if metrics.pruned_flops is defined else metrics.pruned_gflops if
+            metrics.pruned_gflops is defined else metrics.effective_flops if metrics.effective_flops is defined else ''
+            %}
+            <a href="{{ url_for('insight', base=base_model, pruned=pruned_model, model_type=model_type, keep_ratio=keep_ratio_percent, base_flops=base_flops, pruned_flops=pruned_flops) }}"
+              class="block px-6 py-4 rounded-xl font-bold
+                    bg-gradient-to-r from-violet-500 to-cyan-500
+                    hover:opacity-90 transition">
+              Model Insights
+            </a>
+            <p class="text-slate-400 text-sm mt-3">Layer-wise analysis</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACK -->
+      <div class="text-center mt-16">
+        <a href="{{ url_for('upload') }}" class="text-slate-400 hover:text-slate-200 underline">
+          <-- Prune another model
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  {% include "components/footer.html" %}
+  {% include "components/cursor.html" %}
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="{{ url_for('static', filename='js/cursor.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <script>
+    const navbar = document.getElementById("navbar");
+    if (navbar) navbar.classList.add("navbar-scrolled");
+  </script>
+
+</body>
+
+</html>
+
+
