@@ -23,12 +23,13 @@ With many students and developers limited by **low-resource or entry-level hardw
 
 - ⚡ **Compute Optimization** – Reduces training time and resource usage  
 - 🌱 **Green AI Focus** – Energy-efficient model execution  
-- 🧠 **ML/DL Ready** – Compatible with TensorFlow & PyTorch  
+- 🧠 **ML/DL Ready** – Compatible with TensorFlow  
 - 💻 **Low-Resource Friendly** – Designed for laptops & limited hardware  
 - 🔗 **Modular Architecture** – Easily extendable components  
 - 📊 **Efficient Pipelines** – Streamlined preprocessing & execution  
 - 🧩 **Plug-and-Play Design** – Simple integration of custom modules  
-- 🖥️ **Scalable System** – From student projects to production systems  
+- 🖥️ **Scalable System** – From student projects to production systems
+- 🤖 AI Chatbot Integration – Built-in chatbot powered by LLMs + Retrieval-Augmented Generation (RAG) for intelligent, context-aware interactions and project assistance
 
 ---
 
