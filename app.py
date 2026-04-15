@@ -21,12 +21,139 @@ from pruning.cnn_l1_pruning import prune_cnn
 from pruning.resnet_mask_pruning import prune_resnet_mask
 from pruning.mobilenet_mask_pruning import prune_mobilenet_mask
 from pruning.efficientnet_mask_pruning import prune_efficientnet_mask
+from pruning.transformer_head_pruning import prune_transformer_heads
 from pruning.retrain import retrain_model
 
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
+
+# ============================
+# RAG SETUP
+# ============================
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+
+app = Flask(__name__)
+# Allow large model uploads (e.g. 500 MB)
+app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB
+RAG_MAX_DISTANCE = float(os.getenv("RAG_MAX_DISTANCE", "1.2"))
+
+
+
+# Load embeddings
+embedding_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2",
+)
+
+# Load vectorstore (already persisted)
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+vectorstore = Chroma(
+    persist_directory=os.path.join(BASE_DIR, "persist_directory5"),
+    embedding_function=embedding_model
+)
+
+print("Collection count:", vectorstore._collection.count())
+
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_community.retrievers import BM25Retriever
+from langchain_core.documents import Document
+
+
+dense_retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+all_docs = vectorstore.get()["documents"]
+documents = [Document(page_content=text) for text in all_docs]
+
+bm25 = BM25Retriever.from_documents(documents)
+bm25.k = 3
+
+def hybrid_retrieve(query, k_dense=3, k_bm25=3, max_chunks=6):
+    
+    # Dense
+    dense_docs = dense_retriever.invoke(query)
+    
+    # Sparse
+    bm25_docs = bm25.invoke(query)
+    
+    # Combine
+    combined = dense_docs + bm25_docs
+    
+    # Deduplicate by content
+    seen = set()
+    unique_docs = []
+    
+    for doc in combined:
+        if doc.page_content not in seen:
+            unique_docs.append(doc)
+            seen.add(doc.page_content)
+    
+    return unique_docs[:max_chunks]
+
+rag_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """
+            You are a retrieval-based assistant for TurboCompute.
+
+            You are given extracted context from the TurboCompute knowledge base.
+
+            Rules:
+            - Use ONLY the provided context.
+            - Chunks may have more information than needed, but you should only use what is relevant to the question.
+            - You may combine information across multiple context sections.
+            - Greet user if he is greeting (e.g. "hello", "hi", etc.).
+            - You may rephrase and summarize.
+            - Do NOT introduce external knowledge.
+            - If answer is not present in context, reply exactly:
+            The requested information is not available in the TurboCompute knowledge base.
+            """
+                    ),
+                    (
+                        "human",
+                        """Context:
+            {context}
+
+            Question:
+            {question}
+
+            Answer:
+            """
+        ),
+    ]
+)
+
+from google import genai
+client = genai.Client(api_key="KEY")
+
+@app.route("/ask", methods=["POST"])
+def ask():
+    data = request.get_json(silent=True) or {}
+    query = data.get("question", "")
+
+    if not query:
+        return {"answer": "No question provided."}
+
+    results = hybrid_retrieve(query)
+    context = "\n\n".join([doc.page_content for doc in results])
+
+    final = rag_prompt.format(context=context, question=query)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents = final
+    ).text
+
+
+    return {"answer": response}
+
+
+#----------------------------------------------------------------------------------------------------------------
 
 def model_gflops(model, input_shape):
     total_flops = 0
@@ -56,9 +183,7 @@ def model_gflops(model, input_shape):
     return total_flops / 1e9  # GFLOPs
 
 
-app = Flask(__name__)
-# 🔑 Allow large model uploads (e.g. 500 MB)
-app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB
+
 
 # =====================================================
 # PATHS
@@ -237,6 +362,26 @@ def upload():
                 )
 
             return "Selected transfer model not implemented yet", 400
+
+
+        # =================================================
+        # TRANSFORMER PRUNING
+        # =================================================
+        if model_type == "transformer":
+            pruned_path, report = prune_transformer_heads(
+                model_path=model_path,
+                keep_ratio=keep_ratio,
+                output_dir=OUTPUTS
+            )
+
+            return render_template(
+                "output.html",
+                model_type="transformer",
+                metrics=report,
+                pruned_model=os.path.basename(pruned_path),
+                base_model=os.path.basename(model_path),
+                keep_ratio_percent=int(keep_ratio * 100)
+            )
 
         # =================================================
         # FUTURE ARCHITECTURES
@@ -605,3 +750,5 @@ def rpaper():
 # =====================================================
 if __name__ == "__main__":
     app.run(debug=True)
+
+
