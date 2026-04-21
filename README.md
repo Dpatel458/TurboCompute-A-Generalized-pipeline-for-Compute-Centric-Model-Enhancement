@@ -39,7 +39,7 @@ With many students and developers limited by **low-resource or entry-level hardw
 
 ---
 
-## 👨‍💻 Authors  
+## 👨‍💻 Developers  
 
 **Dhruv Patel**   
 
