@@ -1,7 +1,5 @@
 # 🚀 TurboCompute  
 ### High-Performance ML + Data Processing Engine  
-
-![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
 ---
 
 ## ⚡ Overview  
